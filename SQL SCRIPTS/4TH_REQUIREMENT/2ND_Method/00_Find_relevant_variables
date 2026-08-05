@@ -1,7 +1,0 @@
-SELECT *
-FROM units
-WHERE name ILIKE '%MANDRINO%'
-   OR name ILIKE '%POWER%'
-   OR name ILIKE '%ENERGY%'
-   OR name ILIKE '%CONSUM%'
-;
