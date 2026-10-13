@@ -1,27 +1,28 @@
-# Dashboard stack decision (KAN-118)
+# Dashboard stack (KAN-118)
 
-**Decision: Streamlit.**
+Went with Streamlit.
 
-## Why Streamlit over Grafana
+Looked at Grafana as well but it doesn't really fit what we're doing. The data lives in pandas/parquet (and DuckDB later in 7.16), and Streamlit just reads that directly. Grafana would need a running server plus a datasource in between, which is a lot of setup for a 5 sprint project.
 
-1. Same stack as the rest of the project. The data layer is pandas, DuckDB and Parquet (KAN-25, KAN-44). Streamlit reads those directly; Grafana needs a database or plugin in between.
-2. One command, no server setup. `streamlit run dashboard/app.py` from the repo. Grafana needs a running service, provisioning files and a data source, which is more to maintain for a five-sprint project.
-3. Custom pages are code. The overview with KPIs (KAN-128), the actual vs expected chart with highlighted waste (KAN-26) and the warnings page (KAN-154) are plain Python and plotting code. Grafana panels are limited to what its panel types allow.
-4. Demo mode (KAN-167). Replaying a past period hour by hour with alerts appearing in real time is a loop and a slider in Streamlit. In Grafana it would need a fake live data source.
-5. Everyone in the team can contribute. Only Python is required; no Grafana-specific knowledge.
+Other reasons:
+- it runs with one command from the repo, nothing else to install or host
+- the pages we have in the backlog (overview with KPIs, actual vs expected chart, warnings) are easier to write as plain python than as grafana panels
+- demo mode in sprint 5 (replay a period hour by hour) is basically a slider and a loop in streamlit, in grafana we'd have to fake a live datasource
+- everyone in the team can write python, nobody has done grafana before
 
-Grafana would be the better choice if the sponsor needed a permanently hosted monitoring tool fed by a live sensor stream. That is out of scope.
+If the sponsor at some point wants a permanently hosted monitoring tool on a live sensor feed then grafana makes more sense, but that's not in scope.
 
-## How to run
+## Running it
 
-```bash
+```
 pip install -r requirements.txt
-python -m src.data.combine        # builds data/processed/combined.parquet from the four zone files
+python -m src.data.combine
 streamlit run dashboard/app.py
 ```
 
-## Layout
+combine.py builds data/processed/combined.parquet from the four zone excel files. It's a temporary version until 3.1 (KAN-11) is done, then we should use that one instead and keep this as the refresh command.
 
-- `dashboard/app.py`: the app. Later sprints add pages under `dashboard/pages/`.
-- `src/data/combine.py`: builds the combined table. Temporary until KAN-11 (squad A) lands; then that script becomes the one-command refresh (KAN-230).
-- `data/processed/`: generated files, not committed.
+Files:
+- dashboard/app.py - the app, pages go in dashboard/pages/ later
+- src/data/combine.py - builds the combined table
+- data/processed/ is gitignored
