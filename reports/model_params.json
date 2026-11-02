@@ -1,0 +1,128 @@
+{
+  "NW Plugs & Sockets": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 20
+    },
+    "normal": {
+      "num_leaves": 63,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 20
+    }
+  },
+  "SW Plugs & Sockets": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  },
+  "SE Plugs & Sockets": {
+    "forecast": {
+      "num_leaves": 63,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.1,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  },
+  "NE Plugs & Sockets": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 20
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.1,
+      "n_estimators": 600,
+      "min_child_samples": 20
+    }
+  },
+  "NW Lighting": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.1,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 20
+    }
+  },
+  "SW Lighting": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  },
+  "SE Lighting": {
+    "forecast": {
+      "num_leaves": 63,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.1,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  },
+  "NW HVAC": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  },
+  "SE HVAC": {
+    "forecast": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    },
+    "normal": {
+      "num_leaves": 15,
+      "learning_rate": 0.03,
+      "n_estimators": 600,
+      "min_child_samples": 80
+    }
+  }
+}
