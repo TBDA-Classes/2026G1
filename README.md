@@ -5,7 +5,17 @@ flag hours that use much more than expected (lights, plugs or HVAC on at night, 
 and put a € and CO₂ figure on each event. Method: CRISP-DM in Scrum sprints. Jira: see `docs/reports/Link to jira`.
 
 Status of every workstream: [docs/STATUS_AUDIT.md](docs/STATUS_AUDIT.md).
-Modelling summary: [docs/modelling.md](docs/modelling.md).
+Modelling summary: [docs/modelling.md](docs/modelling.md). 
+
+## Documentation
+
+| Document | Content |
+|---|---|
+| [Methodology](docs/METHODOLOGY.md) | CRISP-DM in Scrum sprints, and a short description of the data |
+| [Data dictionary](docs/DATA_DICTIONARY.md) | every column of the modelling dataset: meaning, unit, source |
+| [Pipeline, cleaning and detection](docs/PIPELINE_MODEL_DETECTION.md) | every cleaning decision, the model and the alert rules, with reasons |
+| [Experiment log](docs/EXPERIMENT_LOG.md) | every modelling experiment with settings, results and decisions |
+| [Presentation storyline](docs/reports/PRESENTATION_STORYLINE.md) | plan for the final presentation (draft) |
 
 ## Notebooks (read in this order)
 
