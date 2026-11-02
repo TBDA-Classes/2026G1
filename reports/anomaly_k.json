@@ -1,0 +1,11 @@
+{
+  "NW Plugs & Sockets": 10.0,
+  "SW Plugs & Sockets": 2.5,
+  "SE Plugs & Sockets": 3.5,
+  "NE Plugs & Sockets": 2.0,
+  "NW Lighting": 8.0,
+  "SW Lighting": 12.0,
+  "SE Lighting": 15.0,
+  "NW HVAC": 8.0,
+  "SE HVAC": 2.0
+}

@@ -1,0 +1,43 @@
+# Parameters for anomaly detection and the EUR / CO2 valuation (notebook 03, src/anomalies.py).
+# Change values here, not in the code. Every number has a source or a reason.
+
+price:
+  # Two views, both reported:
+  #  * OMIE: hourly Spanish day-ahead price (column price_eur_mwh, src/download_price_omie.py).
+  #    Wholesale energy only, no network tolls, charges or taxes -> lower bound of the real cost at that hour.
+  #  * all-in: one fixed average price incl. tolls and taxes. Simple, but it does not follow the market:
+  #    in 2022 (energy crisis) the wholesale price alone was above this value.
+  all_in_eur_per_kwh: 0.142    # Eurostat non-household price, the value used in the Sprint 2 report (KAN-23)
+
+co2:
+  # Electricity mix of the Spanish grid published by the CNMC (mainland, without guarantees of origin),
+  # as reproduced by the Catalan climate office: https://canviclimatic.gencat.cat/en/actua/factors_demissio_associats_a_lenergia/
+  # TO CONFIRM with the KAN-134 owner. 2020 and 2025 are not in that list: nearest year used (flagged).
+  g_per_kwh:
+    2020: 259     # assumption: 2021 value
+    2021: 259
+    2022: 273
+    2023: 260
+    2025: 260     # assumption: 2023 value
+  # Lower reference: REE/CNMC direct emissions 2024, national average 102 g/kWh (location-based, generation only).
+  low_reference_g_per_kwh: 102
+
+anomaly:
+  k_mad: 4.0                  # default only; the per-circuit k chosen in notebook 03 is saved in reports/anomaly_k.json
+  min_event_hours: 2          # ignore single-hour blips
+  merge_gap_hours: 1          # flagged hours separated by <= 1 h belong to the same event
+  min_event_kwh: 0.5          # smaller events (< ~0.07 EUR) are not worth the building manager's attention
+  severity_kwh: [2, 10]       # excess kWh per event: < 2 low, 2-10 medium, > 10 high
+
+off_hours:
+  night_hours: [22, 6]        # 22:00-05:59 local time; plus weekends, holidays and breaks
+  standby_percentile: 10      # standby level = 10th percentile of night use in the training period
+
+synthetic_test:
+  n_blocks: 40
+  block_hours: [3, 12]
+  extra_w:                    # size of an injected "forgotten" load
+    Plugs & Sockets: 1000     # one electric heater
+    Lighting: 300             # a group of lamps
+    HVAC: 300
+  seed: 7
