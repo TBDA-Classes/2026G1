@@ -1,4 +1,4 @@
-# Status audit — Group 1 (2 Nov 2026)
+# Status audit — Group 1 (2 Nov 2026, updated after modelling)
 
 Audit of what is really in the repo, compared with the professor's review slide (early November).
 Scale: 🟢 code/data in the repo · 🟡 partial · 🔴 only described in a report · ⚪ not started.
@@ -13,7 +13,7 @@ Scale: 🟢 code/data in the repo · 🟡 partial · 🔴 only described in a re
 | AmelieBuysse1 | backlog, Sprint 2 report, dashboard sketch, Jira link (`docs/reports/`) |
 | Hector D | backlog report (`docs/reports/`) |
 | Viktor Kalinowski | Streamlit skeleton — branch `KAN-118-dashboard-skeleton`, PR #5, **not merged** |
-| Emma Hendriks | repo structure, frozen dataset + manifest, tests, README, this audit; modelling (Phase 3) |
+| Emma Hendriks | repo structure, frozen dataset + manifest, tests, README, this audit; EDA, models, anomalies (notebooks 01–03, `src/data.py`, `features.py`, `models.py`, `anomalies.py`) |
 
 ## Workstreams
 
@@ -23,11 +23,12 @@ Scale: 🟢 code/data in the repo · 🟡 partial · 🔴 only described in a re
 | Data cleaning | Claimed | 🟡 | `src/clean.py` (12 numbered rules), `data/clean_hourly_*.parquet` | cannot run from raw (input `Storey1_Anomaly_Analysis.xlsx` not in repo); cleaning log / QA report not committed |
 | Timestamps & resampling | Claimed | 🟡 | `src/clean.py` R1/R2, `src/check_utc.py` | minute→hour aggregation code (Regime B) missing |
 | External data | Claimed | 🟢 (CO₂ 🔴) | `src/build_calendar.py`, `src/download_weather.py`, `src/download_price_omie.py`, `src/merge_external.py` + data | CO₂ emission factor; `weather_hourly.parquet` itself not committed (merged copy is) |
-| EDA & profiles | No evidence | 🔴 | text in Sprint 2 report only | EDA script + figures (G2 `eda_analysis.py`, G3 zone comparison) |
-| Baselines | Claimed | 🟡 | `src/model_test.py` B1 last week, B2 4-week median | tests; committed results |
-| ML forecasting | In progress | 🟡 | `src/model_test.py` LightGBM + quantile band, time split | per-circuit models, linear model (claimed in report, no code), committed results |
+| EDA & profiles | No evidence | 🟢 | `notebooks/01_eda.ipynb` (11 questions → modelling decisions), `reports/figures/eda_*.png` | — |
+| Baselines | Claimed | 🟢 | `src/models.py` B1 last week, B2 4-week median, B3 profile; `tests/test_features.py`; `reports/model_comparison.csv` | — |
+| ML forecasting | In progress | 🟢 | `notebooks/02_models.ipynb`: Ridge + LightGBM per circuit, train/val/test + 2025 out-of-time check, leakage tests | — |
 | Frozen dataset | No evidence | 🟢 | `data/processed/cedint_hourly_v1.parquet` + `MANIFEST.json` (SHA-256), `tests/test_dataset.py` | — |
-| Dashboard | Partial | 🟡 | PR #5, unmerged | — |
+| Anomalies & € / CO₂ (our topic) | — | 🟢 | `notebooks/03_anomalies_and_savings.ipynb`, `src/anomalies.py`, `params.yaml`, `reports/anomaly_events.csv`, `savings_summary.csv` | CO₂ factor to confirm |
+| Dashboard | Partial | 🟡 | PR #5, unmerged | connect to `reports/*.csv` |
 
 ## Cleaning traps — checked
 
@@ -48,7 +49,8 @@ None: the frozen dataset is enough to start. Open points for reproducibility are
 - **Massucco** — please push the script that builds the hourly table `00_RAW_DATA` / `data/raw_hourly.parquet` from the raw xlsx (minute→hour for 2025, `Regime`, `raw_readings`), plus `out/cleaning_log.csv` and `data/weather_hourly.parquet`. Without it the pipeline can't be rebuilt from raw.
 - **raffaelesimo** — which of `Storey1_cleaned_data.xlsx`, `data/archive/Storey1_cleaned data (1)` and `KAN-49_attachments.zip` is final? OK to delete the duplicates in `data/archive/`?
 - **Owner of KAN-20** — push the linear regression for NW plugs mentioned in the Sprint 2 report.
-- **Owner of KAN-134** — status of the CO₂ factor (REE).
+- **Owner of KAN-134** — status of the CO₂ factor (REE). `params.yaml` now uses the CNMC mix (259/273/260 g/kWh for 2021/22/23) as a placeholder: please confirm.
+- **Owner of KAN-56 (calendar)** — the Christmas break (until 6 Jan) and the whole-August closure look wrong: NW Plugs shows normal working days on 2 Jan 2023 and SE Lighting is used on weekdays in August 2025. Please check the real UPM closure dates in `src/build_calendar.py`.
 - **Viktor** — PR #5: please rebase on `emma/structure-and-modelling` once merged (files now live in `src/` and `data/`).
 - **Everyone** — upload with `git` (branch + PR), not "Add files via upload": the web upload flattens folders.
 

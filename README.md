@@ -5,6 +5,19 @@ flag hours that use much more than expected (lights, plugs or HVAC on at night, 
 and put a € and CO₂ figure on each event. Method: CRISP-DM in Scrum sprints. Jira: see `docs/reports/Link to jira`.
 
 Status of every workstream: [docs/STATUS_AUDIT.md](docs/STATUS_AUDIT.md).
+Modelling summary: [docs/modelling.md](docs/modelling.md).
+
+## Notebooks (read in this order)
+
+| Notebook | Question |
+|---|---|
+| `notebooks/01_eda.ipynb` | What drives the electricity use of each circuit? → decisions for modelling |
+| `notebooks/02_models.ipynb` | How well can we predict the expected use? Baselines vs Ridge vs LightGBM, time split, leakage checks |
+| `notebooks/03_anomalies_and_savings.ipynb` | Which hours/events are waste, how sure are we (synthetic test), and what is it worth in € and CO₂? |
+
+The notebooks only read the frozen dataset; reusable code is in `src/` (`data.py`, `features.py`, `models.py`, `anomalies.py`),
+parameters for € / CO₂ / alarm thresholds in `params.yaml`. Run them in order (02 writes `reports/model_params.json`, which 03 reads).
+Jupyter kernel: the project venv (`python -m ipykernel install --user --name tbda`).
 
 ## Repository layout
 
@@ -16,7 +29,9 @@ data/
   archive/              duplicate uploads, kept until the group confirms which copy is final
 src/                    all pipeline code (run order below)
 tests/                  pytest checks on the frozen dataset
-reports/                model results, anomaly events, figures
+notebooks/              01 EDA, 02 models, 03 anomalies & savings
+reports/                model results, anomaly events, savings, figures (dashboard inputs)
+params.yaml             prices, CO2 factors, alarm settings (with sources)
 docs/                   status audit, benchmark, modelling notes; reports/ (backlog, sprint reports), building/ (floor plans)
 ```
 
