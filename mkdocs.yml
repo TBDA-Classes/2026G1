@@ -1,0 +1,44 @@
+site_name: CeDInt Storey 1 – Energy waste finder (TBDA Group 1)
+site_description: Finding, valuing and prioritising avoidable electricity use on Storey 1 of the CeDInt building (UPM)
+repo_url: https://github.com/TBDA-Classes/2026G1
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Methodology (CRISP-DM): METHODOLOGY.md
+  - Data dictionary: DATA_DICTIONARY.md
+  - Pipeline, cleaning and detection: PIPELINE_MODEL_DETECTION.md
+  - Experiment log: EXPERIMENT_LOG.md
+  - Modelling summary: modelling.md
+  - Project status: STATUS_AUDIT.md
+
+# Files in docs/ that are not in the menu (Word reports, benchmark notes) are still published, just not listed.
+not_in_nav: |
+  BENCHMARK_OTHER_GROUPS.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
