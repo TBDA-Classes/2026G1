@@ -210,3 +210,11 @@ __marimo__/
 # Config files
 config.yaml
 
+
+# ---- project (G1) ----
+out/
+data/omie_raw/
+data/raw_hourly.parquet
+data/raw_combined_long.parquet
+*-DESKTOP-*
+~$*

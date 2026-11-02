@@ -1,0 +1,11 @@
+holidays==0.107
+lightgbm==4.7.0
+matplotlib==3.11.2
+numpy==2.4.6
+openpyxl==3.1.5
+pandas==3.1.0
+pyarrow==26.0.0
+pytest==9.2.0
+python-calamine==0.9.0
+PyYAML==6.0.3
+scikit-learn==1.9.1
