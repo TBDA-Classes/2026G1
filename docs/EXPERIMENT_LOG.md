@@ -232,12 +232,40 @@ are caught by a second, rule-based signal: off-hours use above the standby level
 
 ---
 
+## EXP-10 · Prediction interval: a 90 % "normal band" per circuit
+
+| | |
+|---|---|
+| Date / sprint | 3 November 2026 · Sprint 3 |
+| Who | Marius Calves |
+| Code | [`notebooks/04_prediction_interval.ipynb`](https://github.com/TBDA-Classes/2026G1/blob/main/notebooks/04_prediction_interval.ipynb), [`src/intervals.py`](https://github.com/TBDA-Classes/2026G1/blob/main/src/intervals.py), `tests/test_intervals.py` |
+| Question | Can the model give a band that contains the real hourly use 90 % of the time, instead of one number? |
+| Data | frozen dataset v1, 9 focus circuits, common split |
+| Set-up | "forecast" features and LightGBM settings of EXP-03/04 (`reports/model_params.json`). Three versions: (1) quantile LightGBM 5 % / 95 % fitted on train; (2) + fixed conformal widening (CQR) calibrated on validation; (3) + rolling conformal widening from the misses of the last 14 / 28 / 56 days (hours ≥ 24 h old only). Window chosen on validation: **28 days**. All versions scored on the same hours. |
+| Results | Average over the 9 circuits, **test** (Jan – Feb 2023): coverage 66 % (quantile) → 83 % (fixed) → **89 %** (rolling); width 0.62 → 0.67 → 0.75 kWh; Winkler score 1.19 → 1.12 → 1.12 kWh. **2025**: 73 % → 87 % → **89 %**. Raw quantile bands are far too narrow (SE Plugs only 9 % inside: its use dropped in 2022). Rolling coverage on test per circuit: 83.5–92.4 %, lowest on NW HVAC (83.5 %) and SE Plugs (84.8 %). |
+| Decision | Keep quantile LightGBM + rolling 28-day conformal widening. Band saved for the dashboard in `reports/interval_bands.parquet` (test and 2025); all scores in `reports/interval_results.csv`. Next: add to the model card (KAN-162) and the "actual vs expected" chart (KAN-26). |
+
+---
+
+## EXP-11 · Prophet compared with LightGBM
+
+| | |
+|---|---|
+| Date / sprint | 3 November 2026 · Sprint 3 |
+| Who | Marius Calves |
+| Code | [`notebooks/05_prophet_comparison.ipynb`](https://github.com/TBDA-Classes/2026G1/blob/main/notebooks/05_prophet_comparison.ipynb), [`src/prophet_compare.py`](https://github.com/TBDA-Classes/2026G1/blob/main/src/prophet_compare.py) |
+| Question | Is LightGBM better than a well-known classic forecasting tool? |
+| Data | frozen dataset v1, 9 focus circuits, common split; every model scored on identical hours |
+| Set-up | Prophet (trend + daily shape for working and non-working days + weekly + yearly + regressors: holiday, break, August, heating / cooling degrees, sun). Trend chosen on validation from: stiff linear, flexible linear, flat. Compared with B2 and LightGBM forecast / normal (settings of EXP-04). Same refit scheme as EXP-03. |
+| Results | Average MAE (kWh per hour) — validation: LightGBM_forecast 0.135 · B2 0.167 · LightGBM_normal 0.175 · Prophet 0.183. **Test:** 0.182 · 0.208 · 0.220 · **0.259**. **2025:** 0.051 · 0.061 · 0.075 · **0.354**. Prophet is best on no circuit in any period; LightGBM_forecast is best on 6 / 5 / 5 circuits. On 2025 Prophet's linear trend is extended over the 2.5-year gap (bias up to −7,700 % on SW Lighting). Sanity check: LightGBM test MAE identical to EXP-03 on all 9 circuits. |
+| Decision | Keep LightGBM_forecast. Prophet cannot follow the recent level (no memory of recent use), and its trend is a risk after a data gap. SARIMA not tried. Results to be added to the model card (KAN-162). |
+
+---
+
 ## Open experiments (not done yet)
 
 | Planned | Jira | Note |
 |---|---|---|
-| Prophet (or SARIMA) compared with LightGBM on the same test period | KAN-146, KAN-75 | needed for the model card |
-| Prediction interval (90–95 %) and its coverage on test data | KAN-144, KAN-196, KAN-197 | EXP-01 already tried quantile LightGBM on zone totals |
 | Retrain after the calendar fix (Christmas break, August) | KAN-56 | results of EXP-03 to EXP-09 may change slightly |
 | Re-run EXP-02 on the common split | KAN-20 | only if the code is pushed |
 
