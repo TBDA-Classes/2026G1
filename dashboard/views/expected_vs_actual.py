@@ -14,6 +14,11 @@ expected, exp_src = dl.load_expected()
 bands, bands_src = dl.load_bands()
 events, _ = dl.load_events()
 scores, _ = dl.load_model_comparison()
+preds, preds_src = dl.load_model_predictions()
+
+MODEL_DEFAULT = "Alert model (LightGBM, all months)"
+MODELS = ["B1_last_week", "B2_median_4w", "B3_profile", "Ridge_forecast",
+          "LightGBM_forecast", "Ridge_normal", "LightGBM_normal"]
 
 # --- Page selectors: circuit and week -----------------------------------------
 names = [metrics.short(c) for c in config.FOCUS]
@@ -42,6 +47,22 @@ actual = (by_hour[col].mean() / 1000).reindex(idx)
 off = by_hour["is_off_hours"].first().reindex(idx).fillna(False).astype(bool)
 temp = by_hour["wx_temp_c"].mean().reindex(idx) if "wx_temp_c" in wk else None
 
+def week_prediction(model_name):
+    """Hourly prediction (kWh) of one model for this circuit and week, or None if the week is not covered."""
+    if preds is None or model_name not in preds.columns:
+        return None
+    p = preds[(preds["circuit"] == circuit) & preds["timestamp_local"].between(start, end)]
+    s = p.groupby("timestamp_local")[model_name].mean().reindex(idx) / 1000
+    return s if s.notna().sum() > 24 else None
+
+
+model_options = [MODEL_DEFAULT] + [m for m in MODELS if preds is not None and m in preds.columns]
+m1, m2 = st.columns([2, 3])
+model = m1.selectbox("Model", model_options,
+                     help="The alert model covers every month. The other models only have predictions "
+                          "for the test months.")
+extra = m2.multiselect("Compare with", [m for m in model_options[1:] if m != model], max_selections=2)
+
 exp_label, alarm = None, None
 if expected is not None:
     e = expected[(expected["circuit"] == circuit) & expected["timestamp_local"].between(start, end)]
@@ -57,6 +78,16 @@ if exp_label is None:
     if expected is not None:
         exp_label += " — the model's values do not cover this week"
 
+using_default = model == MODEL_DEFAULT
+if not using_default:
+    chosen = week_prediction(model)
+    if chosen is None:
+        st.warning(f"{model} only has predictions for the test months, and none fall in this week. "
+                   "Showing the alert model instead.")
+        using_default = True
+    else:
+        exp_series, exp_label, alarm = chosen, f"{model} ({preds_src})", None
+
 show_temp = st.toggle("Show outdoor temperature", value=False, disabled=temp is None)
 
 fig = go.Figure()
@@ -71,7 +102,7 @@ if events is not None:
                       line=dict(color=config.COLOR_THRESHOLD, width=1, dash="dot"),
                       annotation_text=f"{a['severity']} +{a['excess_kWh']:.0f} kWh",
                       annotation_position="top left", annotation_font_size=10)
-if bands is not None:
+if bands is not None and using_default:
     bb = bands[(bands["circuit"] == circuit) & bands["timestamp_local"].between(start, end)]
     if len(bb):
         g = bb.groupby("timestamp_local")
@@ -80,7 +111,15 @@ if bands is not None:
         fig.add_scatter(x=idx, y=lo, line=dict(width=0), fill="tonexty",
                         fillcolor="rgba(107,114,128,0.18)", name="90 % band")
 fig.add_scatter(x=idx, y=actual, name="Actual", line=dict(color=config.COLOR_ACTUAL, width=2))
-fig.add_scatter(x=idx, y=exp_series, name="Expected", line=dict(color=config.COLOR_EXPECTED, dash="dash"))
+fig.add_scatter(x=idx, y=exp_series, name="Expected" if using_default else f"Expected · {model}",
+                line=dict(color=config.COLOR_EXPECTED, dash="dash"))
+no_data = []
+for m, color in zip(extra, ["#2563EB", "#D97706"]):
+    s_m = week_prediction(m)
+    if s_m is None:
+        no_data.append(m)
+    else:
+        fig.add_scatter(x=idx, y=s_m, name=m, line=dict(color=color, dash="dot"))
 if alarm is not None:
     fig.add_scatter(x=idx, y=alarm, name="Alarm threshold",
                     line=dict(color=config.COLOR_THRESHOLD, dash="dot", width=1))
@@ -97,6 +136,8 @@ with st.container(border=True):
         f"Expected = {exp_label}. Grey = off-hours; red = alerts. "
         f"Off-hours average {actual[off].mean():.2f} kW vs {exp_series[off].mean():.2f} kW expected. "
         + (f"{n_missing} missing hours are shown as gaps, not zeros." if n_missing else ""))
+    if no_data:
+        st.caption("No predictions in this week for: " + ", ".join(no_data) + " (test months only).")
     if bands is None:
         st.caption("The 90 % band appears when `reports/interval_bands.parquet` (branch KAN-144) is in main.")
 
@@ -112,16 +153,17 @@ with left.container(border=True):
         period = st.radio("Period", periods, horizontal=True, format_func=config.SPLIT_LABELS.get,
                           index=periods.index("test") if "test" in periods else 0)
         s = sc[sc["period"] == period].sort_values("MAE_kWh")
-        colors = [config.COLOR_ACTUAL if m == "LightGBM_forecast" else "#9CA3AF" for m in s["model"]]
+        highlight = "LightGBM_forecast" if using_default else model
+        colors = [config.COLOR_ACTUAL if m == highlight else "#9CA3AF" for m in s["model"]]
         fig = go.Figure(go.Bar(x=s["MAE_kWh"], y=s["model"], orientation="h", marker_color=colors,
                                text=[f"{v:.3f}" for v in s["MAE_kWh"]], textposition="outside"))
         fig.update_layout(height=60 + 30 * len(s), margin=dict(l=0, r=50, t=0, b=0), plot_bgcolor="white",
                           yaxis=dict(autorange="reversed"), xaxis=dict(visible=False))
         st.plotly_chart(fig)
-        lgb = s[s["model"] == "LightGBM_forecast"]
+        lgb = s[s["model"] == highlight]
         if len(lgb):
             cv = lgb["CV_RMSE_%"].iloc[0]
-            st.caption(f"LightGBM_forecast (the model used for alerts): CV(RMSE) {cv:.0f} % — "
+            st.caption(f"{highlight}{' (the model used for alerts)' if highlight == 'LightGBM_forecast' else ''}: CV(RMSE) {cv:.0f} % — "
                        f"ASHRAE Guideline 14 asks ≤ 30 % for hourly models. Source: notebook 02.")
 with right.container(border=True):
     st.markdown("**How to read this page**")
