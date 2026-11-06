@@ -167,6 +167,20 @@ def load_expected():
 
 
 @st.cache_data
+def load_model_predictions():
+    """Hourly predictions of every model on the test months (notebook 02).
+    Returns (table with timestamp_local, circuit and one column per model, in W) or (None, None)."""
+    p = _find_output(config.TEST_PREDICTIONS_FILE)
+    if p is None:
+        return None, None
+    t = _read(p)
+    if "circuit" not in t.columns:
+        t = t.reset_index()
+    t["timestamp_local"] = pd.to_datetime(t["timestamp_local"])
+    return t, _rel(p)
+
+
+@st.cache_data
 def load_bands():
     p = _find_output(config.BANDS_FILE)
     if p is None:
