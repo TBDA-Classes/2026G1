@@ -91,8 +91,29 @@ def events_fast(H: pd.DataFrame, ts: pd.Series, P: dict) -> pd.DataFrame:
     return ev[ev.groupby("event_id")["excess_kWh"].transform("sum") >= A["min_event_kwh"]]
 
 
-def severity(kwh: float, cuts) -> str:
-    return "low" if kwh < cuts[0] else ("medium" if kwh <= cuts[1] else "high")
+# ------------------------------------------------------------------ severity (backlog F5.2, KAN-152)
+LEVELS = ["low", "medium", "high"]
+
+
+def severity(eur: float, hours: float, S: dict) -> str:
+    """
+    Severity of one event from the money at stake and how long it lasted (params.yaml -> severity).
+      1. level from EUR:  < eur[0] low,  eur[0] .. eur[1] medium,  >= eur[1] high
+      2. an event that lasts >= long_event_hours goes up one level (up to high): a device left on
+         for a whole day or weekend needs action even when its power is modest.
+    A z-score is not used: a large deviation on a 20 W circuit matters less to the manager than a modest one on 2 kW.
+    """
+    lo, hi = S["eur"]
+    level = 0 if eur < lo else (1 if eur < hi else 2)
+    if hours >= S["long_event_hours"]:
+        level = min(level + 1, 2)
+    return LEVELS[level]
+
+
+def rank_alerts(events: pd.DataFrame) -> pd.DataFrame:
+    """Alert list in the order the building manager should handle it: high -> medium -> low, then by EUR."""
+    order = events["severity"].map({s: -i for i, s in enumerate(LEVELS)})
+    return events.assign(_o=order).sort_values(["_o", "eur_all_in"], ascending=[True, False]).drop(columns="_o")
 
 
 # ------------------------------------------------------------------ valuation
@@ -168,7 +189,7 @@ def detect(df: pd.DataFrame, target: str, expected: pd.Series, P: dict, k: float
             "hours": len(g), "share_off_hours": r["is_off_hours"].mean(), "day_type": r["day_type"].mode().iat[0],
             "actual_kWh": H.loc[g["row"], "actual"].sum() / 1000, "expected_kWh": H.loc[g["row"], "expected"].sum() / 1000,
             "excess_kWh": excess.sum(), "eur_omie": v["eur_omie"], "eur_all_in": v["eur_all_in"], "kg_co2": v["kg_co2"],
-            "severity": severity(excess.sum(), P["anomaly"]["severity_kwh"]),
+            "severity": severity(v[P["severity"]["eur_column"]], len(g), P["severity"]),
             "message": hint(target, r, df),
         })
     return H, pd.DataFrame(rows)

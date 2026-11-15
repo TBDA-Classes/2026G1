@@ -1,0 +1,137 @@
+{
+  "events": 1128,
+  "weeks_of_history": 148.3,
+  "eur_column": "eur_all_in",
+  "chosen": {
+    "eur": [
+      0.25,
+      1.0
+    ],
+    "long_event_hours": 24
+  },
+  "params_yaml_matches": true,
+  "result": {
+    "low": {
+      "alerts": 510,
+      "share_of_alerts": 0.452,
+      "per_week": 3.44,
+      "share_of_eur": 0.102
+    },
+    "medium": {
+      "alerts": 392,
+      "share_of_alerts": 0.348,
+      "per_week": 2.64,
+      "share_of_eur": 0.283
+    },
+    "high": {
+      "alerts": 226,
+      "share_of_alerts": 0.2,
+      "per_week": 1.52,
+      "share_of_eur": 0.615
+    }
+  },
+  "raised_by_duration_rule": 54,
+  "previous_kwh_rule": {
+    "low": {
+      "alerts": 579,
+      "share_of_alerts": 0.513,
+      "per_week": 3.9,
+      "share_of_eur": 0.123
+    },
+    "medium": {
+      "alerts": 455,
+      "share_of_alerts": 0.403,
+      "per_week": 3.07,
+      "share_of_eur": 0.457
+    },
+    "high": {
+      "alerts": 94,
+      "share_of_alerts": 0.083,
+      "per_week": 0.63,
+      "share_of_eur": 0.42
+    }
+  },
+  "high_in_2025": 8,
+  "top10_by_eur": [
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2023-01-04 10:00:00",
+      "hours": 44,
+      "excess_kWh": 163.19,
+      "eur_all_in": 23.17,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-02-25 15:00:00",
+      "hours": 27,
+      "excess_kWh": 96.45,
+      "eur_all_in": 13.7,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2021-11-18 16:00:00",
+      "hours": 16,
+      "excess_kWh": 60.12,
+      "eur_all_in": 8.54,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-11-24 15:00:00",
+      "hours": 16,
+      "excess_kWh": 54.22,
+      "eur_all_in": 7.7,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-03-11 17:00:00",
+      "hours": 14,
+      "excess_kWh": 48.95,
+      "eur_all_in": 6.95,
+      "severity": "high"
+    },
+    {
+      "circuit": "SE Plugs & Sockets",
+      "start": "2021-05-23 08:00:00",
+      "hours": 166,
+      "excess_kWh": 48.02,
+      "eur_all_in": 6.82,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-03-09 14:00:00",
+      "hours": 16,
+      "excess_kWh": 47.1,
+      "eur_all_in": 6.69,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-04-04 08:00:00",
+      "hours": 11,
+      "excess_kWh": 44.01,
+      "eur_all_in": 6.25,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2023-01-02 07:00:00",
+      "hours": 9,
+      "excess_kWh": 42.43,
+      "eur_all_in": 6.03,
+      "severity": "high"
+    },
+    {
+      "circuit": "NW Plugs & Sockets",
+      "start": "2022-11-21 15:00:00",
+      "hours": 15,
+      "excess_kWh": 42.06,
+      "eur_all_in": 5.97,
+      "severity": "high"
+    }
+  ]
+}

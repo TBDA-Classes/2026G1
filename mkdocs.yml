@@ -31,6 +31,10 @@ nav:
   - Pipeline, cleaning and detection: PIPELINE_MODEL_DETECTION.md
   - Experiment log: EXPERIMENT_LOG.md
   - Modelling summary: modelling.md
+  - Business case: BUSINESS_CASE.md
+  - Assumptions register: ASSUMPTIONS_REGISTER.md
+  - Deployment plan: DEPLOYMENT_PLAN.md
+  - Backlog coverage: BACKLOG_COVERAGE.md
   - Project status: STATUS_AUDIT.md
 
 # Files in docs/ that are not in the menu (Word reports, benchmark notes) are still published, just not listed.

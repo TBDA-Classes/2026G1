@@ -38,6 +38,10 @@ that each circuit raises about one alert per week.
 | [Pipeline, cleaning and detection](PIPELINE_MODEL_DETECTION.md) | technical readers, maintenance | every cleaning decision, the model and the alert rules |
 | [Experiment log](EXPERIMENT_LOG.md) | technical readers, reviewers | every experiment with settings and results |
 | [Modelling summary](modelling.md) | technical readers | short summary of the three notebooks |
+| [Business case](BUSINESS_CASE.md) | sponsor, sustainability officer | savings potential in € and CO₂, what to fix first, costs, decisions |
+| [Assumptions register](ASSUMPTIONS_REGISTER.md) | anyone checking a number | every price, factor and rule, with its source and status |
+| [Deployment plan](DEPLOYMENT_PLAN.md) | sponsor, CeDInt IT | how to run the tool on live data |
+| [Backlog coverage](BACKLOG_COVERAGE.md) | the team, reviewers | every backlog item with its evidence |
 | [Project status](STATUS_AUDIT.md) | the team | what is done and what is open |
 
 The code is on [GitHub](https://github.com/TBDA-Classes/2026G1). The project is planned in Jira (project KAN).

@@ -137,15 +137,29 @@ So we add a simple, transparent rule:
 - **Off-hours** = nights 22:00–06:00, weekends, holidays and breaks.
 - **Chronic waste** = everything above the standby level during off-hours.
 
-### Severity
+### Severity (backlog F5.2, KAN-152)
 
-| Severity | Excess energy per event |
+Severity is based on the **money at stake and the duration** of an event, not on a statistical score:
+a large deviation on a 20 W circuit matters less to the building manager than a modest one on a 2 kW circuit.
+
+| Severity | Rule |
 |---|---|
-| Low | under 2 kWh |
-| Medium | 2 – 10 kWh |
-| High | over 10 kWh |
+| High | € ≥ 1.00 for the event, **or** Medium and lasting ≥ 24 h |
+| Medium | € 0.25 – 1.00, **or** Low and lasting ≥ 24 h |
+| Low | € < 0.25 |
 
-Thresholds are in `params.yaml` and can be changed without touching the code.
+- € = the all-in value of the event (€ 0.142/kWh), so the same waste gets the same level in every year.
+  The hourly OMIE price doubled in 2022, which would have moved the same heater up a level during the energy crisis.
+- **Why duration:** a device left on for a whole day or weekend needs action even at modest power
+  (54 events are raised one level, mostly SE HVAC running all weekend and NE plug loads).
+- **How the thresholds were chosen** ([EXP-12](EXPERIMENT_LOG.md)): a workload rule on the 1,128 real events.
+  High = about the top 20 % of alerts (≈ 1.5 per week for the whole floor), Low = about the cheapest half.
+  Result: the High alerts cover **62 % of the € at stake**; the previous kWh rule (2 / 10 kWh) put 8 % of alerts
+  in High, covering 42 %.
+- Alert lists are sorted High → Medium → Low, then by € (`rank_alerts` in `src/anomalies.py`).
+
+Thresholds are in `params.yaml` (`severity`) and can be changed without touching the code; re-run notebook 03
+and `python src/calibrate_severity.py` afterwards (a test fails if `reports/anomaly_events.csv` is out of date).
 
 ### Value in € and CO₂
 

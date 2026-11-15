@@ -230,6 +230,35 @@ are caught by a second, rule-based signal: off-hours use above the standby level
 | Result | The largest NW Plugs events look like real waste: use stays flat and high through the night (e.g. 18–19 Nov 2021, +60 kWh; 25–26 Feb 2022, +96 kWh; 4–6 Jan 2023, +163 kWh). In 2025 the top event is SE Lighting on all weekend (26–29 Sep, 65 h, +21 kWh). But most other 2025 SE Lighting events are normal weekday use in August, which the 2020–23 model has never seen and the calendar marks as closed. |
 | Decision | Retrain on recent data before going live; check the calendar; add a "this was normal" button in the dashboard so the manager's feedback becomes labels for future tuning. |
 
+## EXP-12 · Severity levels: calibrating € and duration thresholds
+
+*(EXP-10 and EXP-11 are used on the open branches KAN-144 and KAN-146.)*
+
+| | |
+|---|---|
+| Date / who | 15 November 2026 · Amélie Buysse |
+| Jira / backlog | KAN-152 (KAN-202 rule, KAN-203 calibration) · backlog F5.2 |
+| Code | `src/anomalies.py` (`severity`, `rank_alerts`), [`src/calibrate_severity.py`](https://github.com/TBDA-Classes/2026G1/blob/main/src/calibrate_severity.py), `tests/test_severity.py` |
+| Results files | `reports/severity_calibration.json`, `reports/severity_calibration.csv` (all 36 candidate threshold pairs), `reports/figures/sev_01_calibration.png` |
+| Question | Which thresholds give the building manager a short list of alerts that covers most of the money at stake? |
+| Data | the 1,128 events of notebook 03 (`reports/anomaly_events.csv`, Jun 2020 – Oct 2025, 148 weeks), valued at the all-in price |
+| Set-up | Rule: level from € per event (Low / Medium / High), then **one level up for events lasting ≥ 24 h** (backlog F5.2 asks for € *and* duration). Thresholds searched on a grid of round € values (0.10 – 5.00). Selection rule fixed in advance: High ≈ top 20 % of alerts, Low ≈ cheapest 50 %. |
+
+| Rule | High | Medium | Low | High alerts per week | € covered by High |
+|---|---|---|---|---|---|
+| **€ + duration (chosen):** € 0.25 / € 1.00, +1 level from 24 h | 226 (20 %) | 392 (35 %) | 510 (45 %) | **1.5** | **62 %** |
+| kWh (previous): 2 / 10 kWh | 94 (8 %) | 455 (40 %) | 579 (51 %) | 0.6 | 42 % |
+
+**Result:**
+- Handling one alert in five covers 62 % of the € at stake. All ten most expensive events are High (nine on NW Plugs & Sockets, one SE Plugs event that lasted a week).
+- The duration rule raises 54 events by one level: mostly SE HVAC running all weekend at low power, and long NE plug-load events.
+- With a flat price, € ranks events in the same order as kWh. So the gain over the previous rule comes from the
+  **operating point** (chosen on a workload target instead of round kWh numbers) and from the **duration rule**, not from the unit.
+  The € unit makes the thresholds readable for the manager and lets them scale when CeDInt's real tariff replaces the Eurostat price.
+- In Aug – Oct 2025, 7 of the 8 High alerts are SE Lighting on August weekdays: the known change of use and calendar issue (EXP-09, KAN-56), not a severity problem.
+
+**Decision:** use € 0.25 / € 1.00 with the 24 h rule (`params.yaml` → `severity`). Re-calibrate when the detector is retrained, when the calendar is fixed, and when the false-alarm feedback of backlog F4.4 is available (KAN-150).
+
 ---
 
 ## Open experiments (not done yet)

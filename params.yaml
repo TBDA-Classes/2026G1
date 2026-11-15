@@ -27,7 +27,14 @@ anomaly:
   min_event_hours: 2          # ignore single-hour blips
   merge_gap_hours: 1          # flagged hours separated by <= 1 h belong to the same event
   min_event_kwh: 0.5          # smaller events (< ~0.07 EUR) are not worth the building manager's attention
-  severity_kwh: [2, 10]       # excess kWh per event: < 2 low, 2-10 medium, > 10 high
+
+severity:
+  # Backlog F5.2 / KAN-152: severity = money at stake + duration, not a statistical score.
+  # Calibrated on the real detector output in EXP-12 (src/calibrate_severity.py -> reports/severity_calibration.json).
+  eur_column: eur_all_in      # rank on the fixed all-in price, so the same waste gets the same level in every year
+                              # (the OMIE price doubled in 2022: the same heater would jump a level in the energy crisis)
+  eur: [0.25, 1.0]            # EUR per event: < 0.25 low, 0.25 - 1.0 medium, >= 1.0 high
+  long_event_hours: 24        # an event lasting a day or more (e.g. a weekend) goes up one level, up to high
 
 off_hours:
   night_hours: [22, 6]        # 22:00-05:59 local time; plus weekends, holidays and breaks
