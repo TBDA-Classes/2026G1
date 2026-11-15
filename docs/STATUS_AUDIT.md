@@ -10,7 +10,7 @@ Scale: 🟢 code/data in the repo · 🟡 partial · 🔴 only described in a re
 | Roberto Moran | raw data `data/raw/*.xlsx` |
 | Massucco | all pipeline code in `src/`: loader, unify, save_parquet, clean (rules R1–R12), check_utc, build_calendar, download_weather, download_price_omie, merge_external, model_test |
 | raffaelesimo | cleaned data files (`data/Storey1_cleaned_data.xlsx`, parquets) |
-| AmelieBuysse1 | backlog, Sprint 2 report, dashboard sketch, Jira link (`docs/reports/`) |
+| AmelieBuysse1 | backlog, Sprint 2 report, dashboard sketch, Jira link (`docs/reports/`); severity by € and duration with calibration (EXP-12, `src/calibrate_severity.py`, `tests/test_severity.py`), business case, assumptions register, deployment plan, backlog coverage (`docs/`) — branch `amelie/business-value` |
 | Hector D | backlog report (`docs/reports/`) |
 | Viktor Kalinowski | Streamlit skeleton — branch `KAN-118-dashboard-skeleton`, PR #5, **not merged** |
 | Emma Hendriks | repo structure, frozen dataset + manifest, tests, README, this audit; EDA, models, anomalies (notebooks 01–03, `src/data.py`, `features.py`, `models.py`, `anomalies.py`) |
