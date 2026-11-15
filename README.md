@@ -15,6 +15,10 @@ Modelling summary: [docs/modelling.md](docs/modelling.md).
 | [Data dictionary](docs/DATA_DICTIONARY.md) | every column of the modelling dataset: meaning, unit, source |
 | [Pipeline, cleaning and detection](docs/PIPELINE_MODEL_DETECTION.md) | every cleaning decision, the model and the alert rules, with reasons |
 | [Experiment log](docs/EXPERIMENT_LOG.md) | every modelling experiment with settings, results and decisions |
+| [Business case](docs/BUSINESS_CASE.md) | measured savings potential in kWh, € and CO₂, what to fix first, costs, KPIs, decisions for the sponsor |
+| [Assumptions register](docs/ASSUMPTIONS_REGISTER.md) | every price, factor and rule behind the numbers: value, source, status, effect if it changes |
+| [Deployment plan](docs/DEPLOYMENT_PLAN.md) | how the tool would run on CeDInt's live data: options, retraining, monitoring, costs, roles |
+| [Backlog coverage](docs/BACKLOG_COVERAGE.md) | every backlog item with its evidence in the repo and what is left |
 | [Presentation storyline](docs/reports/PRESENTATION_STORYLINE.md) | plan for the final presentation (draft) |
 
 ## Notebooks (read in this order)
