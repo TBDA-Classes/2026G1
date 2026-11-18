@@ -39,5 +39,6 @@ that each circuit raises about one alert per week.
 | [Experiment log](EXPERIMENT_LOG.md) | technical readers, reviewers | every experiment with settings and results |
 | [Modelling summary](modelling.md) | technical readers | short summary of the three notebooks |
 | [Project status](STATUS_AUDIT.md) | the team | what is done and what is open |
+| [Expected vs actual page](expected-vs-actual.md) | dashboard users | how to choose a model and compare it with others on the Expected vs actual page |
 
 The code is on [GitHub](https://github.com/TBDA-Classes/2026G1). The project is planned in Jira (project KAN).
