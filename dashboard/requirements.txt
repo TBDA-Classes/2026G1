@@ -1,0 +1,6 @@
+# Dashboard only. tools/export_expected.py also needs the repository's requirements.txt (lightgbm, scikit-learn).
+streamlit>=1.45
+plotly>=5.20
+pandas>=2.1
+pyarrow>=14
+PyYAML>=6
