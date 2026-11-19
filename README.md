@@ -24,8 +24,10 @@ Modelling summary: [docs/modelling.md](docs/modelling.md).
 | `notebooks/01_eda.ipynb` | What drives the electricity use of each circuit? → decisions for modelling |
 | `notebooks/02_models.ipynb` | How well can we predict the expected use? Baselines vs Ridge vs LightGBM, time split, leakage checks |
 | `notebooks/03_anomalies_and_savings.ipynb` | Which hours/events are waste, how sure are we (synthetic test), and what is it worth in € and CO₂? |
+| `notebooks/04_prediction_interval.ipynb` | How sure is the expected value? A 90 % band per circuit (quantile LightGBM + conformal calibration) |
+| `notebooks/05_prophet_comparison.ipynb` | Is LightGBM better than the classic Prophet model? (same hours, same split) |
 
-The notebooks only read the frozen dataset; reusable code is in `src/` (`data.py`, `features.py`, `models.py`, `anomalies.py`),
+The notebooks only read the frozen dataset; reusable code is in `src/` (`data.py`, `features.py`, `models.py`, `anomalies.py`, `intervals.py`, `prophet_compare.py`),
 parameters for € / CO₂ / alarm thresholds in `params.yaml`. Run them in order (02 writes `reports/model_params.json`, which 03 reads).
 Jupyter kernel: the project venv (`python -m ipykernel install --user --name tbda`).
 
