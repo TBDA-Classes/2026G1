@@ -20,7 +20,16 @@ every column is described in the [data dictionary](DATA_DICTIONARY.md).
 Notebook 01  Exploration: what drives electricity use?
 Notebook 02  Expected use per circuit (baselines → Ridge → LightGBM)
 Notebook 03  Alerts, chronic waste, € and CO₂   → reports/*.csv (input for the dashboard)
+Notebook 04  Model search (7 model types, month-by-month check) → final LightGBM settings
+             (04_model_search, uses the cleaned zone files data/zone_*_hourly.parquet via src/zones.py)
+Notebook 04  90 % prediction band per circuit     → reports/interval_bands.parquet
+             (04_prediction_interval)
+Notebook 05  Prophet compared with LightGBM
+   ▼
+Dashboard    dashboard/app.py (Streamlit, 7 pages) reads data/processed/ and reports/
 ```
+
+Two notebooks share the number 04 because they were written in parallel.
 
 Each step writes a file that the next step reads, so any step can be re-run on its own.
 The frozen dataset comes with a `MANIFEST.json` that stores a fingerprint (SHA-256) of every input and output file,
@@ -99,14 +108,20 @@ The model predicts this **expected** use; the gap between actual and expected is
 | Circuits | 9 "focus" circuits: Plugs & Sockets (all 4 zones), Lighting (NW, SW, SE), HVAC (NW, SE) |
 | Information the model uses | hour, day of the week, working day / holiday / break, season, outdoor temperature (and how far it is below or above a comfortable level), sunlight, humidity, and the circuit's own use 1 day, 2 days, 1 week and 2 weeks earlier |
 | Information it may **not** use | anything from the same hour (that would be cheating), indoor sensors (they are effects of the use, not causes), anything across the 2023–2025 gap |
-| Final model | **LightGBM** (gradient-boosted decision trees), one model per circuit |
-| Why this model | beats the simple "same as last week" methods on most circuits; Ridge (linear regression) comes close, which shows the model is not over-complicated; results barely change with different settings |
-| How we tested | trained on Jun 2020 – Aug 2022, settings chosen on Sep – Dec 2022, tested once on Jan – Feb 2023, then checked on Aug – Oct 2025 |
+| Final model | **LightGBM** (gradient-boosted decision trees), one model per circuit, all with the same settings (`reports/final_model_settings.json`) |
+| Why this model | out of seven model types (linear, Ridge, Lasso, decision tree, random forest, LightGBM, neural network), LightGBM has the lowest error in a month-by-month check over 15 months and wins most months. A neural network and a random forest come close, and Ridge is not far behind, which shows the model is not over-complicated. Prophet, a well-known forecasting tool, is worse on every circuit. |
+| Why one day ahead | predicting one hour ahead is more accurate, but such a model quickly "gets used to" a heater left on and stops warning; a model that only knows yesterday keeps warning |
+| How we tested | trained on Jun 2020 – Aug 2022, settings chosen on Sep – Dec 2022, then month by month from Sep 2021 to Dec 2022, tested once on Jan – Feb 2023, then checked on Aug – Oct 2025 |
+| Uncertainty | a 90 % band around the prediction (quantile LightGBM with a rolling 28-day correction); on the test months 89 % of the hours fall inside it. Shown in the dashboard's "Expected vs actual" page. |
 | Main metric | MAE in kWh: the average miss, in the unit the client thinks in |
 
 **Honest limitation:** hour by hour, the model is still off by more than the 30 % that the industry guideline ASHRAE 14
 asks for, on most circuits. The main reason is people: heaters and lights are switched on and off by hand.
 For finding *large* waste this is good enough (see the synthetic test below), but it should be said in the presentation.
+
+All experiments behind these choices, with their numbers, are in the [experiment log](EXPERIMENT_LOG.md) (EXP-03 to EXP-05 and EXP-10 to EXP-13).
+**Still open:** notebook 03 and the dashboard export still use the per-circuit settings of notebook 02 (`reports/model_params.json`).
+The difference is very small (0.181 against 0.182 kWh per hour on the test months), but it should be aligned.
 
 ## 4. Detection rules: from "unusual" to "alert"
 

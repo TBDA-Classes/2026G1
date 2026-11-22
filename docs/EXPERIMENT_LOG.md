@@ -11,6 +11,7 @@ If the code is not in the repo, say so.
 | | |
 |---|---|
 | Data | frozen dataset `data/processed/cedint_hourly_v1.parquet` (see [MANIFEST](https://github.com/TBDA-Classes/2026G1/blob/main/data/processed/MANIFEST.json) and the data dictionary) |
+| Data (from EXP-13) | the cleaned zone files of the data-cleaning group, `data/zone_NE/NW/SE/SW_hourly.parquet`, joined into one table by `src/zones.py` (same 26,830 hours) |
 | Target | energy used per hour per circuit, in Wh (= mean W of that hour), predicted **one day ahead** |
 | Circuits | 9 "focus" circuits: Plugs & Sockets (NW, SW, SE, NE), Lighting (NW, SW, SE), HVAC (NW, SE) |
 | Split (by time, never random) | train Jun 2020 – Aug 2022 · validation Sep – Dec 2022 · test Jan – Feb 2023 (used once) · Regime B Aug – Oct 2025 (out-of-time check). COVID lockdown (until 21 Jun 2020) left out. |
@@ -262,12 +263,106 @@ are caught by a second, rule-based signal: off-hours use above the standby level
 
 ---
 
+## EXP-13 · Model search: seven model types, four input sets, month-by-month check
+
+| | |
+|---|---|
+| Date / sprint | 20 November 2026 · Sprint 4 |
+| Who | Linnéa Alindell |
+| Code | [`notebooks/04_model_search.ipynb`](https://github.com/TBDA-Classes/2026G1/blob/main/notebooks/04_model_search.ipynb), [`src/zones.py`](https://github.com/TBDA-Classes/2026G1/blob/main/src/zones.py) |
+| Results file | [`reports/final_model_settings.json`](https://github.com/TBDA-Classes/2026G1/blob/main/reports/final_model_settings.json) |
+| Question | Can other model types, other inputs or better settings predict normal use more accurately than the LightGBM of EXP-03? |
+| Data | the new cleaned zone files (see common set-up); COVID lockdown removed; same split as EXP-03. Sections 2–6 on NW Plugs & Sockets only (the largest circuit, 43 % of all electricity on Storey 1), section 7 on all 9 circuits. |
+| Score to beat | LightGBM with forecast inputs (EXP-03 settings): 0.698 kWh per hour on validation, NW Plugs |
+
+**1. Seven model types × four input sets** (NW Plugs, validation, MAE in kWh per hour; 15 random settings per model, 6 for the neural network)
+
+| Model | Calendar | + weather | + 28-day level ("normal") | + past use ("forecast") |
+|---|---|---|---|---|
+| Random forest | 0.826 | 0.916 | 0.822 | **0.650** |
+| Decision tree | 0.801 | 0.892 | 0.858 | **0.650** |
+| Neural network (MLP) | 0.811 | 0.935 | 0.786 | 0.681 |
+| LightGBM | 0.906 | 1.050 | 0.834 | 0.698 |
+| Linear / Ridge / Lasso | 0.949 | 0.955 | 0.913 | 0.738 |
+
+- Past use is by far the most useful input: every model is best with it.
+- Weather on its own makes every model worse. Use grows from year to year, so the models link older, lower-use years to their weather. Once past use is added, this effect disappears.
+- Ridge and Lasso equal plain linear regression: with 18,000 training hours the penalty changes almost nothing.
+- Random forest and a single decision tree look best here. But one four-month validation period can be lucky, so the best models were checked month by month.
+
+**2. Month-by-month check** (walk-forward: for each month from Sep 2021 to Dec 2022, train on everything before it and predict that month; Sep 2022 skipped, only 105 usable hours)
+
+| Model | Average MAE | Months won (of 15) |
+|---|---|---|
+| **LightGBM** | **0.570** | **9** |
+| Neural network | 0.572 | 0 |
+| Random forest | 0.579 | 4 |
+| Linear regression | 0.595 | 2 |
+| Decision tree | 0.601 | 0 |
+| Baseline: 4-week median | 0.725 | 0 |
+
+The decision tree drops from shared first place to last: its good score in step 1 was luck. All models beat the baseline by about 20 %.
+Winter is much harder than summer (about 0.8–1.3 kWh per hour from November to March, below 0.2 in summer).
+
+**3. How far ahead** (month-by-month, average MAE)
+
+| Model | 1 hour ahead | 1 day ahead | 1 week ahead |
+|---|---|---|---|
+| LightGBM | 0.303 | **0.569** | 0.707 |
+| Neural network | 0.288 | 0.576 | 0.667 |
+| Random forest | 0.306 | 0.576 | 0.686 |
+
+1 hour ahead is about twice as accurate, but it is **not used for the alerts**: a model that sees the last hour quickly
+"gets used to" a heater left on and stops warning while it is still on. A model that only knows yesterday keeps warning.
+
+**4. Training window** (LightGBM, month-by-month): all history 0.570 · last 12 months 0.571 · last 6 months 0.678.
+Six months is clearly worse because the model never sees a full year of seasons. Keep all history; retrain with at least one full year.
+
+**5. Bigger settings search** (50 random settings each for LightGBM and the neural network, LightGBM with early stopping)
+
+| Model | Validation | Month-by-month |
+|---|---|---|
+| LightGBM, settings of step 1 | 0.698 | **0.570** (best in 10 of 15 months) |
+| LightGBM, bigger search | 0.684 | 0.582 |
+| Neural network, settings of step 1 | 0.681 | 0.572 |
+| Neural network, bigger search | 0.678 | 0.627 |
+
+Better on validation but worse month by month: the bigger search overfits the four validation months. Keep the settings of step 1.
+
+**6. All 9 circuits** (month-by-month, average MAE over 9 circuits): LightGBM with **one shared set of settings** 0.117 ·
+LightGBM with settings chosen per circuit 0.120 · baseline 0.157. LightGBM beats the baseline on all 9 circuits (by 12 % on SE Lighting
+to 49 % on NW Lighting). The shared settings win on 7 of 9 circuits; where they lose, the difference is at most 0.001 kWh per hour.
+
+**7. Final test** (used once; average MAE over 9 circuits)
+
+| Model | Test Jan – Feb 2023 | 2025 (Aug – Oct) |
+|---|---|---|
+| **Final model** (shared settings) | **0.181** | **0.049** |
+| Notebook 02 model (settings per circuit, EXP-04) | 0.182 | 0.050 |
+| Baseline: 4-week median | 0.208 | 0.061 |
+
+13 % better than the baseline on the test months and 21 % in 2025. On a few small, regular circuits the baseline is as good or
+better (the three SE circuits in Jan – Feb 2023, by at most 0.007 kWh; SE HVAC and SW Plugs in 2025). The model predicts 12–18 % below
+actual use on average. This is on purpose: it predicts the median, so rare peaks (the waste we look for) do not pull the expected value up.
+The alarm thresholds of EXP-06 are measured from each circuit's own typical miss, so this bias does not cause extra alerts.
+
+| Decision | |
+|---|---|
+| Final model | **One LightGBM model per circuit, all with the same settings** (`reports/final_model_settings.json`: 37 leaves, learning rate 0.0118, 691 trees, min_child_samples 97, subsample 0.68, colsample_bytree 0.83), forecast inputs, 1 day ahead, trained on all history. Simpler than nine sets of settings and just as accurate. |
+| Not yet applied | Notebook 03 and the dashboard export (`dashboard/tools/export_expected.py`) still use the per-circuit settings of EXP-04 (`reports/model_params.json`). Switching changes the test MAE by only 0.001 kWh per hour, but the code and the notebooks should say the same thing. See open experiments. |
+
+---
+
 ## Open experiments (not done yet)
 
 | Planned | Jira | Note |
 |---|---|---|
 | Retrain after the calendar fix (Christmas break, August) | KAN-56 | results of EXP-03 to EXP-09 may change slightly |
 | Re-run EXP-02 on the common split | KAN-20 | only if the code is pushed |
+| Use the final settings of EXP-13 in notebook 03 and the dashboard export | KAN-162 | now `reports/model_params.json` (EXP-04); results change very little |
+| Re-run notebooks 02 and 03 on the new zone files | – | notebooks 02–03 use the frozen dataset v1, notebook 04 the zone files; same hours, but both should use one source |
+| Retrain once more 2025 data exists | – | SE HVAC and SE Lighting behave differently in 2025 (EXP-05, EXP-09, EXP-13) |
+| Settings search per horizon (1 hour, 1 week) | – | all settings were chosen for 1 day ahead (EXP-13, step 3) |
 
 ---
 
