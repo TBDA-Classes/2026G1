@@ -247,11 +247,25 @@ are caught by a second, rule-based signal: off-hours use above the standby level
 
 ---
 
+## EXP-11 · Prophet compared with LightGBM
+
+| | |
+|---|---|
+| Date / sprint | 3 November 2026 · Sprint 3 |
+| Who | Marius Calves |
+| Code | [`notebooks/05_prophet_comparison.ipynb`](https://github.com/TBDA-Classes/2026G1/blob/main/notebooks/05_prophet_comparison.ipynb), [`src/prophet_compare.py`](https://github.com/TBDA-Classes/2026G1/blob/main/src/prophet_compare.py) |
+| Question | Is LightGBM better than a well-known classic forecasting tool? |
+| Data | frozen dataset v1, 9 focus circuits, common split; every model scored on identical hours |
+| Set-up | Prophet (trend + daily shape for working and non-working days + weekly + yearly + regressors: holiday, break, August, heating / cooling degrees, sun). Trend chosen on validation from: stiff linear, flexible linear, flat. Compared with B2 and LightGBM forecast / normal (settings of EXP-04). Same refit scheme as EXP-03. |
+| Results | Average MAE (kWh per hour) — validation: LightGBM_forecast 0.135 · B2 0.167 · LightGBM_normal 0.175 · Prophet 0.183. **Test:** 0.182 · 0.208 · 0.220 · **0.259**. **2025:** 0.051 · 0.061 · 0.075 · **0.354**. Prophet is best on no circuit in any period; LightGBM_forecast is best on 6 / 5 / 5 circuits. On 2025 Prophet's linear trend is extended over the 2.5-year gap (bias up to −7,700 % on SW Lighting). Sanity check: LightGBM test MAE identical to EXP-03 on all 9 circuits. |
+| Decision | Keep LightGBM_forecast. Prophet cannot follow the recent level (no memory of recent use), and its trend is a risk after a data gap. SARIMA not tried. Results to be added to the model card (KAN-162). |
+
+---
+
 ## Open experiments (not done yet)
 
 | Planned | Jira | Note |
 |---|---|---|
-| Prophet (or SARIMA) compared with LightGBM on the same test period | KAN-146, KAN-75 | needed for the model card |
 | Retrain after the calendar fix (Christmas break, August) | KAN-56 | results of EXP-03 to EXP-09 may change slightly |
 | Re-run EXP-02 on the common split | KAN-20 | only if the code is pushed |
 
