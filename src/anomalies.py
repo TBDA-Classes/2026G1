@@ -97,9 +97,17 @@ def severity(kwh: float, cuts) -> str:
 
 # ------------------------------------------------------------------ valuation
 def co2_factor(df: pd.DataFrame, P: dict) -> pd.Series:
-    """g CO2 per kWh for every hour, from params.yaml (by year)."""
+    """
+    g CO2 per kWh for every hour.
+    method "hourly": the hourly grid intensity in the data (column co2_intensity_g_kwh, Red Electrica ESIOS 10355);
+                     hours without a value fall back to the yearly factor.
+    method "yearly": one factor per year from params.yaml (g_per_kwh).
+    """
     table = P["co2"]["g_per_kwh"]
-    return df["timestamp_local"].dt.year.map(lambda y: table.get(int(y), table[max(table)]))
+    yearly = df["timestamp_local"].dt.year.map(lambda y: table.get(int(y), table[max(table)])).astype(float)
+    if P["co2"].get("method", "yearly") == "hourly" and "co2_intensity_g_kwh" in df:
+        return df["co2_intensity_g_kwh"].astype(float).fillna(yearly)
+    return yearly
 
 
 def value(kwh: pd.Series, df: pd.DataFrame, P: dict) -> pd.DataFrame:

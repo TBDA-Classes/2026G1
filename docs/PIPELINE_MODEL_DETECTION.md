@@ -139,8 +139,8 @@ We use **two signals**, because one model cannot see everything.
    A building manager stops reading alarms if there are too many.
 
 **Tested with fake loads:** we added 40 fake "forgotten devices" at night (1 kW on plug circuits, 300 W on lights and HVAC)
-and checked whether the detector found them. It found 98–100 % on 7 of the 9 circuits. On NW Plugs, the noisiest circuit,
-one heater is found only 32 % of the time, but 2 kW is found 85 % of the time.
+and checked whether the detector found them. It found 100 % on 7 of the 9 circuits. On NW Plugs, the noisiest circuit,
+one heater is found only 30 % of the time, but 2 kW is found 92 % of the time.
 
 ### Signal 2 — Chronic off-hours waste (the same thing every week)
 
@@ -168,7 +168,7 @@ Thresholds are in `params.yaml` and can be changed without touching the code.
 |---|---|---|
 | € (lower bound) | excess kWh × hourly wholesale price | OMIE (energy only, no network costs or taxes) |
 | € (all-in) | excess kWh × €0.142/kWh | Eurostat non-household price |
-| CO₂ | excess kWh × Spanish grid emission factor (259–273 g/kWh by year) | CNMC grid mix, **placeholder to confirm** (KAN-134) |
+| CO₂ | excess kWh × hourly CO₂ intensity of the Spanish grid (column `co2_intensity_g_kwh`) | Red Eléctrica ESIOS indicator 10355, from the cleaned zone files. Alternative in `params.yaml`: yearly CNMC supplier-mix factor (259–273 g/kWh), about twice as high |
 
 Events during working hours are shown as "to investigate" but **not** counted as savings, because part of that use is legitimate.
 
@@ -184,8 +184,8 @@ Events during working hours are shown as "to investigate" but **not** counted as
 
 | Year | Potential savings (9 focus circuits) | € | CO₂ |
 |---|---|---|---|
-| 2021 | 7.2 MWh (32 % of their use) | €740 – 1,020 | 1.9 t |
-| 2022 | 6.0 MWh (27 % of their use) | €850 – 1,010 | 1.6 t |
+| 2021 | 7.2 MWh (32 % of their use) | €750 – 1,020 | 0.8 t |
+| 2022 | 6.1 MWh (27 % of their use) | €860 – 1,010 | 0.8 t |
 
 Biggest lever: **electric heaters on the NW plug circuits** at night, at weekends and in breaks (3–4 MWh per year),
 then the **NW lights that are on every night** 22:00–07:00 (about 1 MWh per year).
@@ -195,7 +195,7 @@ then the **NW lights that are on every night** 22:00–07:00 (about 1 MWh per ye
 - There is no list of confirmed waste, so the detector is validated with fake loads and a manual check of the largest events.
 - "Potential" savings are an upper estimate: part of the off-hours use above standby may be legitimate (late work, equipment that must stay on).
 - The calendar assumptions look wrong in places; alerts on holidays must be read with care.
-- The CO₂ factor and the all-in price are placeholders to confirm.
+- The all-in price (0.142 €/kWh) is a placeholder to confirm (KAN-23).
 - The building is used differently in 2025 than in 2020–2023; the model must be retrained on recent data before going live.
 - **Two definitions of "closed" exist in the project:** the Product Backlog (F1.1) uses opening hours Mon–Fri 08:00–20:00,
   while the detection code uses nights 22:00–06:00. The group should agree on one, because it changes the waste figures.

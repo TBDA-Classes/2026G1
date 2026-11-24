@@ -16,10 +16,10 @@ sockets of zone NW**, left on in empty rooms. The second is the **NW lighting**,
 
 | Year | Potential savings | € per year | CO₂ per year |
 |---|---|---|---|
-| 2021 | 7.2 MWh | €740 – 1,020 | 1.9 t |
-| 2022 | 6.0 MWh | €850 – 1,010 | 1.6 t |
+| 2021 | 7.2 MWh | €750 – 1,020 | 0.8 t |
+| 2022 | 6.1 MWh | €860 – 1,010 | 0.8 t |
 
-*Nine focus circuits; CO₂ factor still to be confirmed.*
+*Nine focus circuits; CO₂ with the hourly grid intensity of Red Eléctrica (ESIOS 10355).*
 
 ## How it works, in one paragraph
 

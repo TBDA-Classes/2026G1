@@ -6,8 +6,8 @@ every number below comes from them.
 ## Approach in one picture
 
 ```
-frozen dataset v1 ──► 01 EDA: what drives use? ──► 02 expected use per circuit ──► 03 residual = actual − expected
-(hourly, 2020-23 + 2025)   (calendar, temperature,    (baselines → Ridge →          ├─ signal 1: events (model)
+zone files (4)    ──► 01 EDA: what drives use? ──► 02 expected use per circuit ──► 03 residual = actual − expected
+(load_zones(), 2020-23+2025)(calendar, temperature,    (baselines → Ridge →          ├─ signal 1: events (model)
                             memory, trend)             LightGBM, time split)         ├─ signal 2: chronic off-hours waste (rule)
                                                                                      └─ € (OMIE / all-in) and CO₂ → dashboard CSVs
 ```
@@ -27,16 +27,19 @@ frozen dataset v1 ──► 01 EDA: what drives use? ──► 02 expected use p
 | Models | B1 last week, B2 4-week median, B3 day-type profile, Ridge (Pipeline), LightGBM (L1 loss, 8-setting search on validation) |
 | Metric | **MAE in kWh** (main), RMSE, CV(RMSE) (ASHRAE 14), NMBE |
 
-**Result:** LightGBM_forecast is best or within 0.002 kWh of the best on 7 of 9 circuits. NW Plugs: MAE 0.69 (val) / 0.97 (test)
+**Result:** LightGBM_forecast is best or within 0.003 kWh of the best on 7 of 9 circuits. NW Plugs: MAE 0.70 (val) / 0.98 (test)
 vs 0.85 / 1.05 for the best baseline. Ridge is close. The "normal" set without recent lags is only baseline-level.
-Full table: `reports/model_comparison.csv`.
+Full table: `reports/model_comparison.csv`. **Final model** (notebook `04_model_search`): the same LightGBM, but with one shared
+set of settings for all circuits (`reports/final_model_settings.json`); notebook 03 uses it.
+
+**Data:** the cleaned zone files of the data-cleaning group (`data/zone_*_hourly.parquet`), joined by `load_zones()` in `src/zones.py`.
 
 ## Anomalies and value (notebook 03)
 * Expected values for all hours via quarterly **cross-fitting** (no hour predicted by a model that saw it).
 * **Events:** residual > median + k·MAD per circuit and hour type; ≥ 2 h and ≥ 0.5 kWh; **k per circuit = smallest k with ≤ ~1 event/week** (alarm budget).
-* **Synthetic test:** 98–100 % of injected loads found on 7 of 9 circuits; NW Plugs from ~2 kW (85 %), 1 kW only 32 %.
+* **Synthetic test:** 100 % of injected loads found on 7 of 9 circuits; NW Plugs from ~2 kW (92 %), 1 kW only 30 %.
 * **Chronic waste:** off-hours use above standby (10th percentile of night use).
-* **Value (9 focus circuits):** 2021 — 7.2 MWh, €740–1,020, 1.9 t CO₂; 2022 — 6.0 MWh, €850–1,010, 1.6 t CO₂.
+* **Value (9 focus circuits):** 2021 — 7.2 MWh, €750–1,020, 0.8 t CO₂; 2022 — 6.1 MWh, €860–1,010, 0.8 t CO₂ (hourly grid CO₂, Red Eléctrica ESIOS 10355).
   Biggest lever: heaters on NW plugs (3–4 MWh/year), then the NW night light (~1 MWh/year).
 * Outputs: `reports/anomaly_events.csv`, `reports/offhours_waste_daily.csv`, `reports/savings_summary.csv`; parameters in `params.yaml`.
 

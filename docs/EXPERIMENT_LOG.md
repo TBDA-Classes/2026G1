@@ -353,14 +353,25 @@ The alarm thresholds of EXP-06 are measured from each circuit's own typical miss
 
 ---
 
+## EXP-14 · Notebooks 01–03 on the cleaned zone files, final settings in notebook 03
+
+| | |
+|---|---|
+| Date / sprint | 24 November 2026 |
+| Who | Emma Hendriks (with Claude Code) |
+| Code | `notebooks/01_eda.ipynb`, `02_models.ipynb`, `03_anomalies_and_savings.ipynb`; `src/zones.py` (`load_zones()`, now also builds `STOREY1\|TOTAL W`), `src/anomalies.py` (hourly CO₂), `params.yaml` (`co2.method: hourly`) |
+| Question | Do the results change when notebooks 01–03 read the cleaned zone files and notebook 03 uses the shared settings of EXP-13? |
+| Data | `data/zone_*_hourly.parquet` via `load_zones()`. Circuit and indoor-sensor values are identical to the frozen dataset v1; the calendar now starts the Christmas break on 23 Dec (72 hours); 31 price hours differ; new hourly CO₂ column (Red Eléctrica ESIOS 10355) |
+| Set-up | Same split, features and metrics as EXP-03 to EXP-09. Notebook 03: one LightGBM per circuit with `reports/final_model_settings.json`; alarm k re-chosen with the same rule (≈ 1 event per circuit per week); CO₂ valued with the hourly grid intensity |
+| Results | Notebook 01: only decimals change. Notebook 02: NW Plugs LightGBM 0.698 (val) / 0.975 (test) kWh/h, was 0.694 / 0.974; conclusions unchanged. Notebook 03: k unchanged except NW Lighting 8 → 10; synthetic test 100 % recall on 7 of 9 circuits, NW Plugs 30 % (1 kW) / 92 % (2 kW); same top events; savings 2021 7.2 MWh, €750–1,020; 2022 6.1 MWh, €860–1,010. **CO₂ 0.8 t per year** (was 1.6–1.9 t with the yearly CNMC supplier-mix factor) |
+| Decision | Notebooks 01–03 and `04_model_search` now use one data source. The lower CO₂ comes from the factor, not from the model: the hourly REE figure describes the grid's generation; the CNMC factor (still in `params.yaml`) describes a supplier mix. The group should say which one the client report uses |
+
 ## Open experiments (not done yet)
 
 | Planned | Jira | Note |
 |---|---|---|
 | Retrain after the calendar fix (Christmas break, August) | KAN-56 | results of EXP-03 to EXP-09 may change slightly |
 | Re-run EXP-02 on the common split | KAN-20 | only if the code is pushed |
-| Use the final settings of EXP-13 in notebook 03 and the dashboard export | KAN-162 | now `reports/model_params.json` (EXP-04); results change very little |
-| Re-run notebooks 02 and 03 on the new zone files | – | notebooks 02–03 use the frozen dataset v1, notebook 04 the zone files; same hours, but both should use one source |
 | Retrain once more 2025 data exists | – | SE HVAC and SE Lighting behave differently in 2025 (EXP-05, EXP-09, EXP-13) |
 | Settings search per horizon (1 hour, 1 week) | – | all settings were chosen for 1 day ahead (EXP-13, step 3) |
 

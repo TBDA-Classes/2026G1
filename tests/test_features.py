@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data import load
+from src.zones import load_zones
 from src.features import make_features, feature_lags, split_of
 from src.models import ProfileBaseline, baseline_median_4w
 
@@ -12,7 +12,7 @@ T = "NW|Plugs & Sockets W"
 
 @pytest.fixture(scope="module")
 def df():
-    return load()
+    return load_zones()
 
 
 @pytest.mark.parametrize("kind", ["forecast", "normal"])

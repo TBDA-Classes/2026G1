@@ -58,6 +58,8 @@ def load_zones(folder: Path = ZONE_DIR, drop_lockdown: bool = True) -> pd.DataFr
     df["is_break"] = df["is_christmas_break"] | df["is_holy_week"] | df["is_august_closure"]   # long closure
     df["low_coverage"] = df[[f"{z}|low_coverage" for z in ZONES]].any(axis=1)               # any zone
     df["date_local"] = df["timestamp_local"].dt.normalize()
+    # storey total = sum of the 4 zone totals, only when all 4 exist (same rule as R12 in src/clean.py)
+    df["STOREY1|TOTAL W"] = df[[f"{z}|ZONE TOTAL W" for z in ZONES]].sum(axis=1, min_count=len(ZONES))
 
     # 4. the same steps as src.data.load(): remove the COVID lockdown, add helper columns
     if drop_lockdown:

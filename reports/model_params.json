@@ -1,10 +1,10 @@
 {
   "NW Plugs & Sockets": {
     "forecast": {
-      "num_leaves": 15,
+      "num_leaves": 63,
       "learning_rate": 0.03,
       "n_estimators": 600,
-      "min_child_samples": 20
+      "min_child_samples": 80
     },
     "normal": {
       "num_leaves": 63,
@@ -24,7 +24,7 @@
       "num_leaves": 15,
       "learning_rate": 0.03,
       "n_estimators": 600,
-      "min_child_samples": 80
+      "min_child_samples": 20
     }
   },
   "SE Plugs & Sockets": {
@@ -36,7 +36,7 @@
     },
     "normal": {
       "num_leaves": 15,
-      "learning_rate": 0.1,
+      "learning_rate": 0.03,
       "n_estimators": 600,
       "min_child_samples": 80
     }
@@ -50,15 +50,15 @@
     },
     "normal": {
       "num_leaves": 15,
-      "learning_rate": 0.1,
+      "learning_rate": 0.03,
       "n_estimators": 600,
-      "min_child_samples": 20
+      "min_child_samples": 80
     }
   },
   "NW Lighting": {
     "forecast": {
       "num_leaves": 15,
-      "learning_rate": 0.1,
+      "learning_rate": 0.03,
       "n_estimators": 600,
       "min_child_samples": 80
     },
@@ -108,7 +108,7 @@
       "num_leaves": 15,
       "learning_rate": 0.03,
       "n_estimators": 600,
-      "min_child_samples": 80
+      "min_child_samples": 20
     }
   },
   "SE HVAC": {
@@ -122,7 +122,7 @@
       "num_leaves": 15,
       "learning_rate": 0.03,
       "n_estimators": 600,
-      "min_child_samples": 80
+      "min_child_samples": 20
     }
   }
 }

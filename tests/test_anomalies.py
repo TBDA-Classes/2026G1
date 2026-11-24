@@ -41,3 +41,13 @@ def test_value_uses_price_and_co2_factor():
     assert np.isclose(v["eur_omie"].iat[0], 1.0)                           # 10 kWh * 0.1 EUR/kWh
     assert np.isclose(v["eur_all_in"].iat[0], 10 * P["price"]["all_in_eur_per_kwh"])
     assert np.isclose(v["kg_co2"].iat[0], 10 * P["co2"]["g_per_kwh"][2022] / 1000)
+
+
+def test_value_uses_hourly_co2_when_available():
+    P = load_params()
+    P["co2"]["method"] = "hourly"
+    df = pd.DataFrame({"price_eur_mwh": [100.0, 100.0], "co2_intensity_g_kwh": [150.0, np.nan],
+                       "timestamp_local": [pd.Timestamp("2022-06-01 12:00"), pd.Timestamp("2022-06-01 13:00")]})
+    v = value(pd.Series([10.0, 10.0]), df, P)
+    assert np.isclose(v["kg_co2"].iat[0], 10 * 150 / 1000)                                # hourly value
+    assert np.isclose(v["kg_co2"].iat[1], 10 * P["co2"]["g_per_kwh"][2022] / 1000)       # missing -> yearly factor

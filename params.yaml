@@ -10,9 +10,14 @@ price:
   all_in_eur_per_kwh: 0.142    # Eurostat non-household price, the value used in the Sprint 2 report (KAN-23)
 
 co2:
-  # Electricity mix of the Spanish grid published by the CNMC (mainland, without guarantees of origin),
-  # as reproduced by the Catalan climate office: https://canviclimatic.gencat.cat/en/actua/factors_demissio_associats_a_lenergia/
-  # TO CONFIRM with the KAN-134 owner. 2020 and 2025 are not in that list: nearest year used (flagged).
+  # method "hourly" (default): hourly CO2 intensity of the Spanish peninsular grid, column co2_intensity_g_kwh in the
+  #   zone files of the data-cleaning group (Red Electrica ESIOS indicator 10355). Follows the grid hour by hour.
+  # method "yearly": one factor per year (g_per_kwh below). Also used for hours without an hourly value.
+  method: hourly
+  # Yearly factors: electricity mix published by the CNMC (mainland, without guarantees of origin), i.e. what a
+  # consumer without a green contract reports. Higher than the hourly REE figure because it is a supplier-mix factor.
+  # Source: https://canviclimatic.gencat.cat/en/actua/factors_demissio_associats_a_lenergia/
+  # 2020 and 2025 are not in that list: nearest year used.
   g_per_kwh:
     2020: 259     # assumption: 2021 value
     2021: 259

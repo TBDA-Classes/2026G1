@@ -73,7 +73,7 @@ in € and CO₂, and what should be fixed first?
 
 **Business evaluation**
 
-- Potential savings of 6–7 MWh, about €740–1,020 and 1.6–1.9 t CO₂ per year on the focus circuits.
+- Potential savings of 6–7 MWh, about €750–1,020 and 0.8 t CO₂ per year on the focus circuits.
 - About one alert per circuit per week, so the manager is not flooded.
 
 *Where:* [experiment log](EXPERIMENT_LOG.md), [modelling summary](modelling.md).
