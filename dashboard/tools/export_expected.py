@@ -1,8 +1,9 @@
 """
 Export the model's EXPECTED use for every hour since 2020, for the "Expected vs actual" page.
 
-Notebook 03 computes these values (cross-fitting: each quarter predicted by a LightGBM trained on the
-other quarters) but does not save them. This script re-runs exactly the team's code from src/
+Since 16 Nov 2026 notebook 03 saves these values itself in reports/expected_hourly.parquet: this script is only
+a fallback when that file is missing (cross-fitting: each quarter predicted by a LightGBM trained on the other
+quarters). This script re-runs exactly the team's code from src/
 (same data, same settings from reports/model_params.json, same alarm k from reports/anomaly_k.json),
 so the values are identical to the notebook's.
 
@@ -25,14 +26,23 @@ import pandas as pd                                  # noqa: E402
 from src.anomalies import crossfit_expected, detect, hour_type, load_params, threshold_stats  # noqa: E402
 from src.data import FOCUS, load, short             # noqa: E402
 
+try:
+    from src.zones import load_zones                 # notebooks 01–03 since 24 Nov 2026
+except ImportError:
+    load_zones = None
+
 OUT = ROOT / "dashboard" / "data" / "expected_hourly.parquet"
 
 
 def main():
     P = load_params()
-    df = load()                                      # frozen dataset, lockdown removed (as notebook 03)
-    params = json.load(open(ROOT / "reports" / "model_params.json"))
-    lgb = {k.replace(" ", "|", 1) + " W": v["forecast"] for k, v in params.items()}
+    df = load_zones() if load_zones else load()      # same data as notebook 03, lockdown removed
+    final = ROOT / "reports" / "final_model_settings.json"
+    if final.exists():                               # final model: one setting for every circuit (notebook 04)
+        lgb = {c: json.load(open(final)) for c in FOCUS}
+    else:
+        params = json.load(open(ROOT / "reports" / "model_params.json"))
+        lgb = {k.replace(" ", "|", 1) + " W": v["forecast"] for k, v in params.items()}
     kmap = json.load(open(ROOT / "reports" / "anomaly_k.json"))
     htype = hour_type(df)
 

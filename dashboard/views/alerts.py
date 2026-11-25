@@ -6,6 +6,7 @@ import config
 import data_loader as dl
 import metrics
 import ui
+import why
 
 hourly, src = dl.load_hourly()
 P, _ = dl.load_params()
@@ -27,8 +28,28 @@ waste = sel[sel["category"] == "Off-hours waste"]
 check = sel[sel["category"] == "To investigate"]
 
 period = "all months" if all_months else f["month"].strftime("%B %Y")
-ui.page_header("Alerts", f"{period} · {len(sel)} alerts from the model (notebook 03) · sorted by severity, then kWh",
+ui.page_header("Alerts", f"{period} · {len(sel)} alerts from the model (notebook 03) · sorted by severity, then €",
                None if all_months else dl.month_coverage(src, f["month"]))
+
+# --- How the severity levels were calibrated (EXP-12) -------------------------------
+cal, _ = dl.load_calibration()
+counts = sel["severity"].value_counts()
+c1, c2, c3, c4 = st.columns(4)
+for col, level in zip((c1, c2, c3), ("High", "Medium", "Low")):
+    with col.container(border=True):
+        st.markdown(f"{ui.severity_pill(level)}", unsafe_allow_html=True)
+        st.metric(f"{level} alerts", int(counts.get(level, 0)))
+        if cal and level.lower() in cal.get("result", {}):
+            r = cal["result"][level.lower()]
+            st.caption(f"all history: {r['per_week']:.1f} a week · {r['share_of_eur']:.0%} of the € at stake")
+with c4.container(border=True):
+    if cal and "high" in cal.get("result", {}):
+        h = cal["result"]["high"]
+        st.metric("Handle the High ones first", f"{h['share_of_eur']:.0%} of €")
+        st.caption(f"≈ {h['per_week']:.1f} High alerts a week for the whole floor (EXP-12)")
+    else:
+        st.metric("€ at stake (selection)", ui.eur(sel["eur_all_in"].sum()))
+        st.caption("all-in price")
 
 tab1, tab2, tab3 = st.tabs([f"Off-hours waste · {len(waste)}", f"To investigate (working hours) · {len(check)}",
                             "Data errors"])
@@ -48,10 +69,12 @@ def table_and_detail(df: pd.DataFrame, key: str):
         table = pd.DataFrame({
             "Severity": df["severity"], "Circuit": df["circuit"], "Day": df["day_type"],
             "When": df["start"].dt.strftime("%a %d %b %Y %H:%M") + " → " + df["end"].dt.strftime("%a %d %b %H:%M"),
-            "Hours": df["hours"], "Excess kWh": df["excess_kWh"].round(1),
-            "€ all-in": df["eur_all_in"].round(2), "Status": df["status"]})
+            "Hours": df["hours"], "€ all-in": df["eur_all_in"].round(2), "Excess kWh": df["excess_kWh"].round(1),
+            "Status": df["status"]})
         event = st.dataframe(table, hide_index=True, height=440, on_select="rerun",
-                             selection_mode="single-row", key=f"table_{key}")
+                             selection_mode="single-row", key=f"table_{key}",
+                             column_config={"€ all-in": st.column_config.NumberColumn(format="€ %.2f"),
+                                            "Excess kWh": st.column_config.NumberColumn(format="%.1f")})
         st.download_button("Download this list (CSV)", table.to_csv(index=False).encode("utf-8"),
                             file_name=f"alerts_{key}.csv", mime="text/csv", key=f"dl_{key}")
         st.caption(f"Click a row to see its detail · source: {events_src}")
@@ -72,7 +95,9 @@ def table_and_detail(df: pd.DataFrame, key: str):
 
         col = next(c for c in config.FOCUS if metrics.short(c) == a["circuit"])
         t0, t1 = a["start"] - pd.Timedelta("24h"), a["end"] + pd.Timedelta("24h")
-        w = hourly[hourly["timestamp_local"].between(t0, t1)].groupby("timestamp_local")[col].mean() / 1000
+        win = hourly[hourly["timestamp_local"].between(t0, t1)].groupby("timestamp_local")
+        w = win[col].mean() / 1000
+        temp = win["wx_temp_c"].mean() if "wx_temp_c" in hourly else None
         fig = go.Figure()
         fig.add_vrect(x0=a["start"], x1=a["end"], fillcolor="rgba(185,28,28,.10)", line_width=0)
         fig.add_scatter(x=w.index, y=w.values, name="Actual", line=dict(color=config.COLOR_ACTUAL))
@@ -84,16 +109,27 @@ def table_and_detail(df: pd.DataFrame, key: str):
         if a["circuit"] in standby:
             fig.add_hline(y=standby[a["circuit"]] / 1000, line_dash="dot", line_color="#6B7280",
                           annotation_text="standby level")
-        fig.update_layout(height=220, margin=dict(l=0, r=0, t=10, b=0), plot_bgcolor="white",
-                          showlegend=False, yaxis_title="kW")
+        if temp is not None and temp.notna().any():
+            fig.add_scatter(x=temp.index, y=temp.values, name="Outdoor °C", yaxis="y2",
+                            line=dict(color="#2563EB", width=1, dash="dot"))
+            fig.update_layout(yaxis2=dict(overlaying="y", side="right", title="°C", showgrid=False))
+        fig.update_layout(height=240, margin=dict(l=0, r=0, t=10, b=0), yaxis_title="kW", hovermode="x unified",
+                          legend=dict(orientation="h", y=1.15, font=dict(size=11)))
         st.plotly_chart(fig, key=f"chart_{key}")
+        if temp is not None and temp.notna().any():
+            st.caption(f"Outside during the alert: {temp.loc[a['start']:a['end']].mean():.1f} °C on average "
+                       f"(blue dotted line). Shaded = the alert; 24 h before and after for comparison.")
+        why.explain_alert(src, a)          # which factors raised or lowered the expected use (extension 7.2)
 
         new = st.radio("Status", dl.STATUSES, horizontal=True, index=dl.STATUSES.index(a["status"]),
                        key=f"radio_{key}_{a['alert_id']}")
         if new != a["status"]:
             dl.save_status(a["alert_id"], new)
             st.rerun()
-        st.caption("\"This was normal\" turns the manager's feedback into labels for tuning the alerts later.")
+        hist = dl.status_history(a["alert_id"])
+        if len(hist):
+            st.caption("History: " + " · ".join(f"{s} ({d})" if d else s for d, s in zip(hist["changed_at"], hist["status"])))
+        st.caption("\"This was normal\" turns the manager's feedback into labels for tuning the alerts later (KAN-150).")
 
 
 with tab1:
@@ -111,7 +147,5 @@ with tab3:
             st.warning(f"{n} hours this month were built from fewer than 30 one-minute readings (less precise).")
     st.caption("Gaps are not waste: the cleaning (rules R1–R12) leaves wrong values empty instead of guessing.")
 
-sev = P["anomaly"]["severity_kwh"]
-st.caption(f"Severity by excess energy per alert: Low < {sev[0]} kWh, Medium {sev[0]}–{sev[1]} kWh, "
-           f"High > {sev[1]} kWh (params.yaml). An alert = hours far above the model's expectation, "
-           f"≥ {P['anomaly']['min_event_hours']} h and ≥ {P['anomaly']['min_event_kwh']} kWh.")
+st.caption(f"{metrics.severity_rule_text(P)} An alert = hours far above the model's expectation, "
+           f"≥ {P['anomaly']['min_event_hours']} h and ≥ {P['anomaly']['min_event_kwh']} kWh (params.yaml).")

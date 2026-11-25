@@ -27,7 +27,7 @@ def split_chart(col: str, title: str):
                 marker_color=config.COLOR_OPEN)
     fig.add_bar(y=t[col], x=t["Off-hours"], name="Off-hours", orientation="h", marker_color=config.COLOR_WASTE,
                 text=[f"{p:.0f} % off-hours" for p in t["off_pct"].fillna(0)], textposition="outside")
-    fig.update_layout(barmode="stack", height=40 + 34 * max(len(t), 3), plot_bgcolor="white",
+    fig.update_layout(barmode="stack", height=40 + 34 * max(len(t), 3),
                       margin=dict(l=0, r=0, t=10, b=0), yaxis=dict(autorange="reversed"),
                       xaxis_title="kWh", legend=dict(orientation="h", y=-0.3))
     st.markdown(f"**{title}**")
