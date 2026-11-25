@@ -33,7 +33,7 @@ Everything runs on your computer: no Streamlit account, no internet needed once 
 ```
 2026G1\                         (or 2026G1-main\)
 ├── data\
-│   └── processed\cedint_hourly_v1.parquet   ← frozen data
+│   ├── zone_NE_hourly.parquet … zone_SW_hourly.parquet   ← cleaned data, one file per zone
 ├── reports\                                  ← modelling results
 ├── src\
 ├── params.yaml
@@ -104,9 +104,9 @@ streamlit run dashboard\app.py
 
 ### Check that everything is connected
 
-- At the bottom of the sidebar: `Data: data/processed/cedint_hourly_v1.parquet`.
+- At the bottom of the sidebar: `Data: data/zone_*_hourly.parquet` (the 4 zone files).
 - **Method** page, "Data sources" table: every file found is listed; missing ones say "not found".
-- Quick check: **Overview**, month **January 2022**, all zones → **3,001 kWh**, **52.1 %** in off-hours, **44** alerts.
+- Quick check: **Overview**, month **January 2022**, all zones → **3,001 kWh**, **52.1 %** in off-hours, waste **€ 138 – 189**, **43** alerts.
 
 ---
 
@@ -139,19 +139,22 @@ To stop: the console's red square, or **Consoles → Restart kernel**.
 
 ---
 
-## 9. "Expected" line for every hour (once, optional)
+## 9. "Why did the model expect this value?" explanations (once, optional)
 
-Without this step, the **Expected vs actual** page shows the real model only for January–February 2023
-(and the team's B2 baseline for other weeks). To get the model everywhere:
+The "Expected" line for every hour is already in the repository (`reports/expected_hourly.parquet`, written by
+notebook 03): nothing to do. Only the **Why did the model expect this value?** panel (Alerts and Expected vs actual
+pages) needs one more file, computed once:
 
 ```
 pip install -r requirements.txt
-python dashboard\tools\export_expected.py
+python dashboard\tools\export_contributions.py
 ```
 
-The first line installs the modelling libraries (LightGBM, scikit-learn). The script re-uses the team's
-code (`src/`) and writes `dashboard\data\expected_hourly.parquet` in a few minutes.
-Then in the dashboard: ⋮ menu at the top right → **Clear cache** → **Rerun**.
+The first line installs the modelling libraries (LightGBM, scikit-learn). The script repeats exactly the computation
+of notebook 03 (same data, same settings) and asks the model, for every hour, how much each factor (temperature,
+type of day, recent use…) added or removed. It writes `dashboard\data\expected_contributions.parquet` in a few
+minutes and checks that the values are those of notebook 03. Then in the dashboard: ⋮ menu at the top right →
+**Clear cache** → **Rerun**. Better: ask the modelling team to add it to `reports/`, so everyone has it.
 
 ---
 
@@ -173,6 +176,7 @@ Then in the dashboard: ⋮ menu at the top right → **Clear cache** → **Rerun
 | Red "Hourly data not found" message | `dashboard` is not at the repository root | Move it next to `data` and `reports` (step 1) |
 | A page says "needs reports/…" | That modelling file is not in your copy | Update the repository (step 10) |
 | `ModuleNotFoundError: lightgbm` (step 9) | Modelling libraries missing | `pip install -r requirements.txt` at the root |
+| PowerShell: `profile.ps1 cannot be loaded… running scripts is disabled` | Windows execution policy | Use **Anaconda Prompt**, or once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | `Port 8501 is already in use` | A dashboard is already running | Close the other window, or add `--server.port 8502` |
 | Red error inside the page | Bug | Copy the full message and send it to the dashboard team |
 | Slow first load (≈ 10 s) | Initial computation | Normal: instant afterwards (cache) |

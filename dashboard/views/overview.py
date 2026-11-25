@@ -34,9 +34,13 @@ with c2.container(border=True):
     st.metric("Used during off-hours", f"{k['off_share_pct']:.1f} %")
     st.caption("nights, weekends, holidays, breaks")
 with c3.container(border=True):
-    st.metric("Chronic off-hours waste", ui.eur_range(k["waste_eur"]))
-    prev = f" · {ui.eur(k['waste_eur_prev'])} previous month (all-in)" if k["waste_eur_prev"] is not None else ""
-    st.caption(f"{k['waste_kwh']:,.0f} kWh · {k['waste_co2']:,.0f} kg CO₂{prev}")
+    lo, hi = k["waste_eur"]
+    w = daily_sel[daily_sel["month"] == f["month"]]
+    delta = (f"{w['eur_all_in'].sum() - k['waste_eur_prev']:+,.0f} € vs previous month (all-in)"
+             if k["waste_eur_prev"] is not None else None)
+    st.metric("Off-hours waste", ui.eur_range(k["waste_eur"]), delta, delta_color="inverse")
+    st.caption(f"{k['waste_kwh']:,.0f} kWh · {k['waste_co2']:,.0f} kg CO₂ · € from the wholesale price to the "
+               "all-in tariff")
 with c4.container(border=True):
     st.metric("Alerts this month", k["events"])
     st.markdown(" ".join(f"{ui.severity_pill(s)} {k['events_by_sev'].get(s, 0)}"
@@ -53,8 +57,7 @@ with left.container(border=True):
                            customdata=mw[["excess_kWh", "eur_omie"]],
                            hovertemplate="%{x}<br>€ %{y:.0f} all-in · € %{customdata[1]:.0f} OMIE"
                                          "<br>%{customdata[0]:.0f} kWh<extra></extra>"))
-    fig.update_layout(height=270, margin=dict(l=0, r=0, t=10, b=0), plot_bgcolor="white",
-                      xaxis=dict(type="category"))
+    fig.update_layout(height=270, xaxis=dict(type="category"), yaxis=dict(tickprefix="€ "))
     st.plotly_chart(fig)
     st.caption("Selected month highlighted · no data between March 2023 and August 2025")
 
@@ -76,7 +79,7 @@ with left.container(border=True):
                                marker_color=config.COLOR_WASTE,
                                text=[f"{k:,.0f} kWh · {ui.eur(e)}" for k, e in zip(top["excess_kWh"], top["eur_all_in"])],
                                textposition="outside"))
-        fig.update_layout(height=240, margin=dict(l=0, r=90, t=0, b=0), plot_bgcolor="white",
+        fig.update_layout(height=240, margin=dict(l=0, r=90, t=0, b=0),
                           yaxis=dict(autorange="reversed"), xaxis=dict(visible=False))
         st.plotly_chart(fig)
 
@@ -90,7 +93,9 @@ with right.container(border=True):
         l.markdown(f"**{a['circuit']}** · {a['day_type']}  \n"
                    f"{a['start']:%a %d %b %H:%M} → {a['end']:%a %d %b %H:%M}")
         r.markdown(f"{ui.severity_pill(a['severity'])}<br>"
-                   f"<b style='font-family:monospace'>+{a['excess_kWh']:.0f} kWh</b>", unsafe_allow_html=True)
+                   f"<b style='font-family:monospace'>{ui.eur_range(metrics.eur_range(a['eur_omie'], a['eur_all_in']))}"
+                   f"</b> · {a['excess_kWh']:.0f} kWh",
+                   unsafe_allow_html=True)
     st.page_link("views/alerts.py", label="All alerts →")
 
 ui.footnote(P)

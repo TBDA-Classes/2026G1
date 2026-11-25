@@ -14,7 +14,7 @@ import pandas as pd
 import config
 
 FLAG_COLUMNS = ["is_weekend", "is_holiday", "is_break", "is_working_day", "is_covid_lockdown",
-                "is_august_closure", "low_coverage", "price_eur_mwh_is_fallback"]
+                "is_august_closure", "is_christmas_break", "is_holy_week", "low_coverage", "price_eur_mwh_is_fallback"]
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +42,30 @@ def to_bool(s: pd.Series) -> pd.Series:
     if s.dtype == bool:
         return s
     return s.astype(str).str.strip().str.upper().isin(["TRUE", "1", "1.0"])
+
+
+# ---------------------------------------------------------------------------
+# Zone files of the data-cleaning group -> one table (same as src/zones.load_zones)
+# ---------------------------------------------------------------------------
+def join_zones(tables: dict) -> pd.DataFrame:
+    """{'NE': df, 'NW': df, ...} -> one hourly table with columns 'NW|Plugs & Sockets W', 'NW|ENV Temp °C'…"""
+    tables = {z: t.sort_values("timestamp_utc").reset_index(drop=True) for z, t in tables.items()}
+    base = tables["NW"] if "NW" in tables else next(iter(tables.values()))
+    df = base[[c for c in config.ZONE_SHARED if c in base]].copy()
+    for zone, t in tables.items():
+        if not t["timestamp_utc"].equals(df["timestamp_utc"]):
+            raise ValueError(f"zone {zone} does not have the same hours as the other zone files")
+        own = [c for c in t.columns if c not in config.ZONE_SHARED and c not in config.ZONE_ONLY]
+        df = pd.concat([df, t[own].add_prefix(f"{zone}|")], axis=1)
+        if "low_coverage" in t:
+            df[f"{zone}|low_coverage"] = to_bool(t["low_coverage"])
+    for c in ["is_christmas_break", "is_holy_week", "is_august_closure"]:
+        if c in df:
+            df[c] = to_bool(df[c])
+    df["is_break"] = df["is_christmas_break"] | df["is_holy_week"] | df["is_august_closure"]
+    lc = [c for c in df.columns if c.endswith("|low_coverage")]
+    df["low_coverage"] = df[lc].any(axis=1) if lc else False
+    return df
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +114,35 @@ def standby_levels(df: pd.DataFrame, P: dict) -> pd.Series:
                       for c in config.FOCUS if c in df}, name="standby_W")
 
 
+def b1_expected(df: pd.DataFrame, col: str) -> pd.Series:
+    """Team baseline B1: same hour one week earlier, inside each regime. Watts."""
+    return pd.concat([g[col].shift(168) for _, g in df.groupby("Regime")]).reindex(df.index)
+
+
+def b3_expected(df: pd.DataFrame, col: str) -> pd.Series:
+    """Team baseline B3 (src/models.ProfileBaseline): median per (working day yes/no, hour),
+    learned on the training period only, then applied to every hour. Watts."""
+    a, b = config.TRAIN_PERIOD
+    train = df["timestamp_local"].between(a, b)
+    table = df[train].groupby(["is_working_day", "hour_local"])[col].median()
+    idx = pd.MultiIndex.from_arrays([df["is_working_day"], df["hour_local"]])
+    return pd.Series(table.reindex(idx).values, index=df.index)
+
+
+def phase_of(ts) -> pd.Series:
+    """Evaluation phase of every timestamp (config.PHASES): Train, Validation, Test, Out-of-time 2025…"""
+    ts = pd.Series(pd.to_datetime(ts))
+    out = pd.Series("–", index=ts.index)
+    for name, a, b, *_ in config.PHASES:
+        out[(ts >= a) & (ts <= b)] = name
+    return out
+
+
+def mae_kwh(actual: pd.Series, pred: pd.Series) -> float:
+    m = actual.notna() & pred.notna()
+    return float((actual[m] - pred[m]).abs().mean()) if m.any() else np.nan
+
+
 def b2_expected(df: pd.DataFrame, col: str) -> pd.Series:
     """Team baseline B2 (src/models.baseline_median_4w): median of the same hour
     in the last 4 weeks, computed inside each regime. Watts."""
@@ -134,10 +187,24 @@ def prepare_daily(d: pd.DataFrame) -> pd.DataFrame:
 
 
 def sort_alerts(ev: pd.DataFrame) -> pd.DataFrame:
+    """Order the manager should handle them: High -> Medium -> Low, then by € (src/anomalies.rank_alerts)."""
     order = {"High": 0, "Medium": 1, "Low": 2}
     return (ev.assign(_s=ev["severity"].map(order).fillna(3))
-              .sort_values(["_s", "excess_kWh"], ascending=[True, False])
+              .sort_values(["_s", "eur_all_in"], ascending=[True, False])
               .drop(columns="_s"))
+
+
+def severity_rule_text(P: dict) -> str:
+    """Plain-language severity rule, whichever version of params.yaml is in the repo."""
+    S = P.get("severity")
+    if S:   # new rule (EXP-12, Nov 2026): € per event + duration
+        lo, hi = S["eur"]
+        return (f"Severity = money at stake and duration: Low < € {lo:.2f} per alert, Medium € {lo:.2f}–{hi:.2f}, "
+                f"High ≥ € {hi:.2f}; an alert lasting {S['long_event_hours']} h or more goes one level up.")
+    cuts = P.get("anomaly", {}).get("severity_kwh")
+    if cuts:  # previous rule (kWh)
+        return f"Severity by excess energy: Low < {cuts[0]} kWh, Medium {cuts[0]}–{cuts[1]} kWh, High > {cuts[1]} kWh."
+    return ""
 
 
 def eur_range(lo: float, hi: float) -> tuple[float, float]:
@@ -182,6 +249,55 @@ def chronic_heatmap(daily_sel: pd.DataFrame) -> pd.DataFrame:
     """kWh above standby in off-hours, circuit x month."""
     return daily_sel.pivot_table(index="circuit", columns="month", values="excess_kWh",
                                  aggfunc="sum").sort_index()
+
+
+def chronic_by_definition(df: pd.DataFrame, standby_W: pd.Series, P: dict, definition: str) -> pd.DataFrame:
+    """Chronic waste (kWh above standby while closed) per year and circuit, for two definitions of 'closed':
+         'night' = team definition (nights 22–06 + non-working days) -> reproduces reports/savings_summary.csv
+         'day'   = backlog F1.1 (outside Mon–Fri 08:00–20:00 + non-working days)
+    Same formula as src/anomalies.offhours_waste, so the two figures are comparable."""
+    if definition == "night":
+        closed = df["is_off_hours"]
+    else:
+        h = df["hour_local"]
+        closed = ~df["is_working_day"] | (h < 8) | (h >= 20)
+    year = df["timestamp_local"].dt.year
+    g = P["co2"]["g_per_kwh"]
+    yearly_g = year.map(lambda y: g.get(int(y), g[max(g)])).astype(float)
+    hourly_g = df["co2_intensity_g_kwh"].astype(float).fillna(yearly_g) if "co2_intensity_g_kwh" in df else yearly_g
+    omie = df["price_eur_mwh"].astype(float) / 1000 if "price_eur_mwh" in df else pd.Series(np.nan, index=df.index)
+    rows = []
+    for c in config.FOCUS:
+        name = short(c)
+        if c not in df or name not in standby_W:
+            continue
+        excess = ((df[c] - standby_W[name]).clip(lower=0) / 1000).where(closed, 0.0).fillna(0)
+        parts = pd.DataFrame({"kWh": excess, "eur_omie": excess * omie, "kg_hourly": excess * hourly_g / 1000,
+                              "kg_yearly": excess * yearly_g / 1000}).groupby(year).sum()
+        for y, r in parts.iterrows():
+            rows.append({"year": y, "circuit": name, **r.to_dict()})
+    out = pd.DataFrame(rows)
+    out[["zone", "load_type"]] = out["circuit"].str.split(" ", n=1, expand=True)
+    return out
+
+
+def accuracy_table(scores: pd.DataFrame) -> pd.DataFrame:
+    """LightGBM hourly accuracy per circuit against the indicative targets (review slide B1)."""
+    lgb = scores[scores["model"] == "LightGBM_forecast"]
+    piv = lgb.pivot_table(index="circuit", columns="period", values=["CV_RMSE_%", "NMBE_%"])
+    rows = []
+    for c in piv.index:
+        load = c.split(" ", 1)[1]
+        label, limit = config.ACCURACY_TARGETS.get(load, ("–", None))
+        cv_test = piv.get(("CV_RMSE_%", "test"), pd.Series(dtype=float)).get(c, np.nan)
+        cv_val = piv.get(("CV_RMSE_%", "val"), pd.Series(dtype=float)).get(c, np.nan)
+        nmbe = piv.get(("NMBE_%", "test"), pd.Series(dtype=float)).get(c, np.nan)
+        cv_b = piv.get(("CV_RMSE_%", "regime_b"), pd.Series(dtype=float)).get(c, np.nan)
+        met = (lambda v: "–" if limit is None or pd.isna(v) else ("met" if v <= limit else "not met"))
+        rows.append({"Circuit": c, "Target": label, "CV(RMSE) Sep–Dec 22": cv_val, "Val.": met(cv_val),
+                     "CV(RMSE) Jan–Feb 23": cv_test, "Test": met(cv_test), "NMBE Jan–Feb 23": nmbe,
+                     "CV(RMSE) Aug–Oct 25": cv_b, "2025": met(cv_b)})
+    return pd.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------

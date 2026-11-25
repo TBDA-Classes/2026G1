@@ -43,7 +43,7 @@ with st.container(border=True):
     colors = ["#F97316" if v < config.COVERAGE_WARNING else "#0F766E" for v in m["coverage"]]
     fig = go.Figure(go.Bar(x=m["month"].dt.strftime("%b"), y=m["coverage"] * 100, marker_color=colors,
                            text=[f"{v:.0%}" for v in m["coverage"]], textposition="outside"))
-    fig.update_layout(height=260, plot_bgcolor="white", margin=dict(l=0, r=0, t=10, b=0),
+    fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0),
                       yaxis=dict(range=[0, 112], visible=False), xaxis=dict(type="category"))
     st.plotly_chart(fig)
     st.caption(f"Below {config.COVERAGE_WARNING:.0%} in orange: those months carry a warning on every page. "
