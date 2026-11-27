@@ -55,3 +55,4 @@ Backup: if the dashboard fails, have screenshots of every step on hidden slides.
 - Whether the dashboard runs live on a laptop or in demo mode only (KAN-101).
 - Final numbers after the calendar fix and the CO₂ confirmation. **Update parts 3 and 6 then.**
 - Which real alert to use in the demo.
+Draft presentation (Canva): https://canva.link/esvb8urhugm9w5n 
